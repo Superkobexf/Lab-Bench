@@ -83,10 +83,6 @@ PDF 解析是零依赖手写的（解 FlateDecode 流取文本操作符）。**�
 
 代码是单文件 `app.js`，没有构建步骤，改完刷新浏览器就能看到效果。
 
-## 相关项目
-
-- [FlavourMind](https://github.com/Superkobexf/FlavourMind) —— 面向高校教学和科研的开源感官评价平台（AGPL-3.0）
-
 ## 许可协议
 
 [MIT](LICENSE)。可自由使用、修改和分发，包括商业用途。
