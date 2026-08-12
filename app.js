@@ -63,7 +63,7 @@ function exampleStudents() {
       advisorFocus: t("尽快熟悉实验方法，建立文献阅读习惯，明确课题方向"),
       contact: t("待补充"),
       graduation: "2028-06-20",
-      status: "入门阶段",
+      status: t("入门阶段"),
     },
   ];
 }
