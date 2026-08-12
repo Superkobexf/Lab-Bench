@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>课题组管理台</title>
-    <link rel="stylesheet" href="./styles.css?v=generic-v4" />
+    <link rel="stylesheet" href="./styles.css?v=generic-v5" />
   </head>
   <body>
     <div id="introSplash" class="intro-splash hidden" aria-live="polite" aria-label="课题组管理台开屏动画">
@@ -113,6 +113,10 @@
           <button class="nav-item" data-view="settings">数据</button>
         </nav>
         <div class="sidebar-foot">
+          <div class="lang-switch" role="group" aria-label="Language">
+            <button type="button" data-lang="zh">中文</button>
+            <button type="button" data-lang="en">EN</button>
+          </div>
           <button id="notifyBtn" class="ghost-button" type="button">开启提醒</button>
           <p>数据只保存在本机浏览器。</p>
         </div>
@@ -164,6 +168,7 @@
       </div>
     </template>
 
-    <script src="./app.js?v=generic-v4" defer></script>
+    <script src="./i18n.js?v=generic-v5"></script>
+    <script src="./app.js?v=generic-v5" defer></script>
   </body>
 </html>

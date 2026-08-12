@@ -510,6 +510,37 @@ button {
   line-height: 1.5;
 }
 
+.lang-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-bottom: 10px;
+  padding: 3px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.lang-switch button {
+  min-height: 30px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #a6bdb7;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.lang-switch button:hover {
+  color: #ffffff;
+}
+
+.lang-switch button.active {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
 .ghost-button {
   width: 100%;
   min-height: 38px;

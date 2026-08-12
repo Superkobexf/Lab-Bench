@@ -57,11 +57,11 @@ function exampleStudents() {
   return [
     {
       id: "example",
-      name: "示例同学",
+      name: t("示例同学"),
       grade: "研一",
-      role: "课题入门与文献积累",
-      advisorFocus: "尽快熟悉实验方法，建立文献阅读习惯，明确课题方向",
-      contact: "待补充",
+      role: t("课题入门与文献积累"),
+      advisorFocus: t("尽快熟悉实验方法，建立文献阅读习惯，明确课题方向"),
+      contact: t("待补充"),
       graduation: "2028-06-20",
       status: "入门阶段",
     },
@@ -73,12 +73,12 @@ function exampleTopics() {
     {
       id: "example",
       studentId: "example",
-      title: "示例课题名称（请替换为真实课题）",
-      phase: "文献调研与实验方案设计",
-      plan: "短期：完成文献综述和实验方案；长期：按课题计划推进实验、数据分析和论文撰写。",
-      experiments: "暂无正式实验，正在学习基本方法和仪器操作。",
-      literature: "建议按课题关键词建立分类文献库，每周新增 2-3 篇核心文献。",
-      analysis: "暂无数据，待实验启动后记录。",
+      title: t("示例课题名称（请替换为真实课题）"),
+      phase: t("文献调研与实验方案设计"),
+      plan: t("短期：完成文献综述和实验方案；长期：按课题计划推进实验、数据分析和论文撰写。"),
+      experiments: t("暂无正式实验，正在学习基本方法和仪器操作。"),
+      literature: t("建议按课题关键词建立分类文献库，每周新增 2-3 篇核心文献。"),
+      analysis: t("暂无数据，待实验启动后记录。"),
       progress: 10,
       nextReview: dateOffset(14),
       risk: "低",
@@ -93,12 +93,12 @@ function exampleWeeklyLogs() {
       id: "example",
       studentId: "example",
       weekOf: todayISO(),
-      experiment: "本周学习了基本实验方法，熟悉了实验室安全规范。",
-      data: "暂无实验数据。",
-      literature: "阅读了 3 篇入门文献，初步了解课题背景。",
-      blockers: "需要导师确认课题方向和实验优先级。",
-      nextPlan: "下周开始按方案进行预实验。",
-      mentorNote: "建议先从最简单的指标测定开始，逐步建立方法库。",
+      experiment: t("本周学习了基本实验方法，熟悉了实验室安全规范。"),
+      data: t("暂无实验数据。"),
+      literature: t("阅读了 3 篇入门文献，初步了解课题背景。"),
+      blockers: t("需要导师确认课题方向和实验优先级。"),
+      nextPlan: t("下周开始按方案进行预实验。"),
+      mentorNote: t("建议先从最简单的指标测定开始，逐步建立方法库。"),
       outputScore: 3,
     },
   ];
@@ -109,13 +109,13 @@ function exampleDuties() {
     {
       id: "example",
       studentId: "example",
-      title: "实验室卫生值日",
-      category: "日常事务",
+      title: t("实验室卫生值日"),
+      category: t("日常事务"),
       date: todayISO(),
       hours: 1,
       points: 2,
       status: "完成",
-      note: "示例事务记录，可删除后添加真实事务。",
+      note: t("示例事务记录，可删除后添加真实事务。"),
     },
   ];
 }
@@ -127,14 +127,14 @@ function exampleAchievements() {
       studentId: "example",
       type: "SCI",
       status: "撰写中",
-      title: "示例论文题名（请替换为真实成果）",
-      journal: "目标期刊待定",
-      level: "待定",
+      title: t("示例论文题名（请替换为真实成果）"),
+      journal: t("目标期刊待定"),
+      level: t("待定"),
       impactFactor: 0,
-      role: "第一作者",
-      publicationDate: "待补",
-      proof: "示例记录。正式使用时填写 DOI、投稿系统截图或稿件文件路径。",
-      note: "成果展板会按学生汇总，公开展示能形成正向压力。",
+      role: t("第一作者"),
+      publicationDate: t("待补"),
+      proof: t("示例记录。正式使用时填写 DOI、投稿系统截图或稿件文件路径。"),
+      note: t("成果展板会按学生汇总，公开展示能形成正向压力。"),
       attachments: [],
     },
   ];
@@ -144,20 +144,20 @@ function exampleAlumni() {
   return [
     {
       id: "example",
-      name: "示例师兄/师姐",
+      name: t("示例师兄/师姐"),
       graduationYear: "2025",
       degree: "硕士",
       destinationType: "企业研发",
-      organization: "示例单位（请替换）",
-      position: "研发工程师",
-      location: "待补",
-      contact: "待补",
+      organization: t("示例单位（请替换）"),
+      position: t("研发工程师"),
+      location: t("待补"),
+      contact: t("待补"),
       phone: "",
       wechat: "",
       email: "",
-      researchDirection: "示例研究方向",
-      canHelp: "可交流就业面试、企业研发日常和行业选择。",
-      note: "示例校友记录，可删除后添加真实毕业生。",
+      researchDirection: t("示例研究方向"),
+      canHelp: t("可交流就业面试、企业研发日常和行业选择。"),
+      note: t("示例校友记录，可删除后添加真实毕业生。"),
     },
   ];
 }
@@ -168,14 +168,14 @@ function exampleFinanceRecords() {
       id: "example",
       studentId: "example",
       category: "reagent",
-      item: "示例试剂采购",
+      item: t("示例试剂采购"),
       amount: 1200,
       date: todayISO(),
-      payer: "导师/课题经费",
-      vendor: "示例供应商",
-      relatedOutput: "示例预实验",
-      proof: "示例凭证。正式使用时填写发票号或采购平台记录。",
-      note: "费用记录用于让课题资源投入透明化，可删除后添加真实记录。",
+      payer: t("导师/课题经费"),
+      vendor: t("示例供应商"),
+      relatedOutput: t("示例预实验"),
+      proof: t("示例凭证。正式使用时填写发票号或采购平台记录。"),
+      note: t("费用记录用于让课题资源投入透明化，可删除后添加真实记录。"),
       attachments: [],
     },
   ];
@@ -214,7 +214,7 @@ function saveState() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch (e) {
     if (e.name === 'QuotaExceededError' || e instanceof DOMException) {
-      alert('浏览器存储空间已满，当前数据无法保存。请导出数据备份后清理部分浏览器数据。');
+      alert(t('浏览器存储空间已满，当前数据无法保存。请导出数据备份后清理部分浏览器数据。'));
     }
     return;
   }
@@ -258,13 +258,36 @@ function latestLog(studentId) {
     .sort((a, b) => b.weekOf.localeCompare(a.weekOf))[0];
 }
 
-function escapeHTML(value = "") {
+/* 列表分隔符跟随语言：中文用顿号，英文用逗号。
+   名字本身是用户数据、不参与翻译，所以分隔符只能在拼接时就定好。 */
+function listJoin(items) {
+  return items.join(getLang() === "zh" ? "、" : ", ");
+}
+
+/* 枚举值（年级、风险、状态这类）在数据里始终存中文，
+   保证筛选和统计的比较逻辑跨语言都成立；只有显示时才翻译。
+   所以它走 tv() 而不是 escapeHTML() —— 后者会把内容标记成
+   用户数据，翻译时直接跳过。 */
+function tv(value = "") {
   return String(value)
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+/* 输出用一对私有区字符包起来，标记“这是用户数据”。
+   i18n 的 tr() 看到这段就跳过翻译，最后再把标记去掉。
+   否则一个叫“数据分析”的课题名会被当成界面文案翻成英文。 */
+function escapeHTML(value = "") {
+  const escaped = String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+  return `${GUARD_OPEN}${escaped}${GUARD_CLOSE}`;
 }
 
 function hashText(value = "") {
@@ -279,7 +302,7 @@ function optionStudents(selected = "", multiple = false) {
   return state.students
     .map((student) => {
       const isSelected = Array.isArray(selected) ? selected.includes(student.id) : selected === student.id;
-      return `<option value="${student.id}" ${isSelected ? "selected" : ""}>${escapeHTML(student.name)} · ${escapeHTML(student.grade)}</option>`;
+      return `<option value="${student.id}" ${isSelected ? "selected" : ""}>${escapeHTML(student.name)} · ${tv(student.grade)}</option>`;
     })
     .join("");
 }
@@ -290,8 +313,8 @@ function render() {
   document.querySelectorAll(".nav-item").forEach((button) => {
     button.classList.toggle("active", button.dataset.view === currentView);
   });
-  $("#viewTitle").textContent = viewMeta[currentView][0];
-  $("#viewSubtitle").textContent = viewMeta[currentView][1];
+  $("#viewTitle").textContent = t(viewMeta[currentView][0]);
+  $("#viewSubtitle").textContent = t(viewMeta[currentView][1]);
   document.querySelectorAll(".view").forEach((view) => view.classList.remove("active-view"));
   $(`#${currentView}View`).classList.add("active-view");
 
@@ -321,7 +344,9 @@ function getIssues() {
     if (days > 7) {
       issues.push({
         level: days > 14 ? "high" : "medium",
-        title: `${student.name} 已 ${days === 999 ? "没有" : `${days} 天未`}更新周进展`,
+        title: log
+          ? `${escapeHTML(student.name)} 已<span>${days}</span>天未更新周进展`
+          : `${escapeHTML(student.name)} 还没有更新过周进展`,
         body: "建议先看实验记录和下周计划，避免短期问题拖成长期停滞。",
       });
     }
@@ -329,8 +354,8 @@ function getIssues() {
     if (topic && topic.progress < 55 && ["中", "高"].includes(topic.risk)) {
       issues.push({
         level: topic.risk === "高" ? "high" : "medium",
-        title: `${student.name} 的硕士课题处于${topic.risk}风险`,
-        body: `${topic.title} 当前进度 ${topic.progress}%，需要拆出最近一周可验证的小目标。`,
+        title: `${escapeHTML(student.name)}的硕士课题处于${tv(topic.risk)}风险`,
+        body: `${escapeHTML(topic.title)} 当前进度<span>${topic.progress}%</span>，需要拆出最近一周可验证的小目标。`,
       });
     }
   }
@@ -338,8 +363,8 @@ function getIssues() {
     if (daysBetween(topic.nextReview) > 0) {
       issues.push({
         level: topic.risk === "高" ? "high" : "medium",
-        title: `${studentName(topic.studentId)} 的课题复盘已到期`,
-        body: `原定复盘日期为 ${topic.nextReview}，建议检查实验、文献库和数据分析是否同步推进。`,
+        title: `${escapeHTML(studentName(topic.studentId))}的课题复盘已到期`,
+        body: `原定复盘日期为<span>${topic.nextReview}</span>，建议检查实验、文献库和数据分析是否同步推进。`,
       });
     }
   }
@@ -348,8 +373,8 @@ function getIssues() {
     if (days >= -7) {
       issues.push({
         level: "medium",
-        title: `${project.name} ${days > 0 ? "交付节点已过期" : "接近交付节点"}`,
-        body: `合作老师：${project.expert}。下一次跟进 ${project.nextMilestone}，请确认学生分工和后续具体项目。`,
+        title: `${escapeHTML(project.name)} ${days > 0 ? "交付节点已过期" : "接近交付节点"}`,
+        body: `合作老师：${escapeHTML(project.expert)}。下一次跟进<span>${project.nextMilestone}</span>，请确认学生分工和后续具体项目。`,
       });
     }
   }
@@ -363,7 +388,7 @@ function getTodayTasks() {
   (state.weeklyDrafts || []).forEach((draft) => {
     tasks.push({
       level: "high",
-      title: `${studentName(draft.studentId)} 有周进展候选稿待审核`,
+      title: `${escapeHTML(studentName(draft.studentId))} 有周进展候选稿待审核`,
       body: draft.summary || draft.experiment || "扫描后生成的候选周报需要确认。",
       view: "weekly",
     });
@@ -373,8 +398,8 @@ function getTodayTasks() {
     if (!log || daysBetween(log.weekOf) > 7) {
       tasks.push({
         level: "medium",
-        title: `${student.name} 需要补周进展`,
-        body: log ? `上次更新是 ${log.weekOf}。` : "还没有正式周进展。",
+        title: `${escapeHTML(student.name)} 需要补周进展`,
+        body: log ? `上次更新是<span>${log.weekOf}</span>。` : "还没有正式周进展。",
         view: "weekly",
       });
     }
@@ -382,24 +407,24 @@ function getTodayTasks() {
   state.topics.filter((topic) => daysBetween(topic.nextReview) >= -1).forEach((topic) => {
     tasks.push({
       level: topic.risk === "高" ? "high" : "medium",
-      title: `${studentName(topic.studentId)} 课题需要复盘`,
-      body: `${topic.title}，复盘日期 ${topic.nextReview}。`,
+      title: `${escapeHTML(studentName(topic.studentId))} 课题需要复盘`,
+      body: `${escapeHTML(topic.title)}，复盘日期<span>${topic.nextReview}</span>。`,
       view: "topics",
     });
   });
   (state.collaborationLeads || []).filter((lead) => daysBetween(lead.nextFollowUp) >= -3).forEach((lead) => {
     tasks.push({
       level: "medium",
-      title: `${lead.company} 合作线索需要跟进`,
-      body: `${lead.contact || "联系人待补"}，下次跟进 ${lead.nextFollowUp}。`,
+      title: `${escapeHTML(lead.company)} 合作线索需要跟进`,
+      body: `${escapeHTML(lead.contact) || "联系人待补"}，下次跟进<span>${lead.nextFollowUp}</span>。`,
       view: "leads",
     });
   });
   (state.paperCrawler || []).filter((task) => task.findings?.length && daysBetween(task.lastRun) <= 3).forEach((task) => {
     tasks.push({
       level: "low",
-      title: `${studentName(task.studentId)} 有新的论文雷达结果`,
-      body: `${task.findings.length} 篇候选论文，建议筛出能影响实验或讨论的条目。`,
+      title: `${escapeHTML(studentName(task.studentId))} 有新的论文雷达结果`,
+      body: `<span>${task.findings.length}</span> 篇候选论文，建议筛出能影响实验或讨论的条目。`,
       view: "crawler",
     });
   });
@@ -416,7 +441,7 @@ function renderDashboard() {
 
   const backup = backupStatus();
 
-  $("#dashboardView").innerHTML = `
+  $("#dashboardView").innerHTML = tr(`
     ${backup.level === "ok" ? "" : renderBackupAlert()}
     <div class="grid kpi-grid">
       ${kpi("学生", state.students.length, "当前培养对象")}
@@ -458,7 +483,7 @@ function renderDashboard() {
       ${renderIndustrySummary()}
       ${renderReminderCard()}
     </div>
-  `;
+  `);
 }
 
 function renderTodayTask(task) {
@@ -466,8 +491,8 @@ function renderTodayTask(task) {
   return `
     <article class="today-item">
       <div>
-        <strong>${escapeHTML(task.title)}</strong>
-        <p>${escapeHTML(task.body)}</p>
+        <strong>${tr(task.title)}</strong>
+        <p>${tr(task.body)}</p>
       </div>
       <button class="small-button" type="button" data-action="set-view" data-id="${task.view}">去处理</button>
       <span class="tag ${tagClass}">${task.level === "high" ? "优先" : task.level === "medium" ? "提醒" : "信息"}</span>
@@ -487,7 +512,7 @@ function renderStudentProgressRow(student) {
     <article class="list-row">
       <div class="row-head">
         <div>
-          <h3>${escapeHTML(student.name)} <span class="tag blue">${escapeHTML(student.grade)}</span></h3>
+          <h3>${escapeHTML(student.name)} <span class="tag blue">${tv(student.grade)}</span></h3>
           <div class="meta">
             <span>${escapeHTML(student.status)}</span>
             <span>${log ? `最近周报 ${log.weekOf}` : "暂无周报"}</span>
@@ -503,7 +528,7 @@ function renderStudentProgressRow(student) {
 }
 
 function renderIssue(issue) {
-  return `<div class="issue ${issue.level === "high" ? "high" : ""}"><strong>${escapeHTML(issue.title)}</strong><p>${escapeHTML(issue.body)}</p></div>`;
+  return `<div class="issue ${issue.level === "high" ? "high" : ""}"><strong>${tr(issue.title)}</strong><p>${tr(issue.body)}</p></div>`;
 }
 
 function renderDutyBalance() {
@@ -527,7 +552,7 @@ function renderIndustrySummary() {
         ${state.industryProjects.length ? state.industryProjects.map((project) => `
           <div class="list-row">
             <strong>${escapeHTML(project.name)}</strong>
-            <div class="meta"><span>${escapeHTML(project.expert)}</span><span>${project.nextMilestone}</span><span>${(project.students || []).map(studentName).join("、")}</span></div>
+            <div class="meta"><span>${escapeHTML(project.expert)}</span><span>${project.nextMilestone}</span><span>${listJoin((project.students || []).map(studentName))}</span></div>
           </div>
         `).join("") : '<div class="empty-state"><strong>还没有横向合作</strong><p>在"横向课题"页面添加合作单位。</p></div>'}
       </div>
@@ -540,7 +565,7 @@ function renderReminderCard() {
   return `
     <div class="panel">
       <div class="panel-head"><h2>提醒规则</h2><span class="tag ok">本地</span></div>
-      <p class="meta">默认每${dayNames[state.settings.weeklyReviewDay]} ${state.settings.notifyHour}:00 检查学生周进展。浏览器通知开启后，页面打开时会提示到期事项。</p>
+      <p class="meta">默认每<span>${dayNames[state.settings.weeklyReviewDay]}</span> <span>${state.settings.notifyHour}:00</span> 检查学生周进展。浏览器通知开启后，页面打开时会提示到期事项。</p>
       <div style="height: 12px;"></div>
       <button class="primary-button" type="button" data-action="settings">调整规则</button>
     </div>
@@ -550,7 +575,7 @@ function renderReminderCard() {
 /* ── 学生 ── */
 
 function renderStudents() {
-  $("#studentsView").innerHTML = `
+  $("#studentsView").innerHTML = tr(`
     <div class="toolbar">
       <input id="studentSearch" type="search" placeholder="搜索姓名、年级或状态" />
       <button class="primary-button" type="button" data-action="add-student">新增学生</button>
@@ -558,7 +583,7 @@ function renderStudents() {
     <div class="list" id="studentList">
       ${state.students.map(renderStudentRow).join("") || emptyHTML()}
     </div>
-  `;
+  `);
 }
 
 function renderStudentRow(student) {
@@ -566,7 +591,7 @@ function renderStudentRow(student) {
     <article class="list-row searchable" data-text="${escapeHTML(`${student.name} ${student.grade} ${student.status}`)}">
       <div class="row-head">
         <div>
-          <h3>${escapeHTML(student.name)} <span class="tag blue">${escapeHTML(student.grade)}</span></h3>
+          <h3>${escapeHTML(student.name)} <span class="tag blue">${tv(student.grade)}</span></h3>
           <div class="meta"><span>${escapeHTML(student.role)}</span><span>${escapeHTML(student.status)}</span><span>毕业 ${student.graduation}</span></div>
         </div>
         <div class="row-actions">
@@ -583,7 +608,7 @@ function renderStudentRow(student) {
 /* ── 硕士课题 ── */
 
 function renderTopics() {
-  $("#topicsView").innerHTML = `
+  $("#topicsView").innerHTML = tr(`
     <div class="toolbar">
       <select id="topicFilter">
         <option value="">全部风险</option>
@@ -596,7 +621,7 @@ function renderTopics() {
     <div class="list">
       ${state.topics.map(renderTopicRow).join("") || emptyHTML()}
     </div>
-  `;
+  `);
 }
 
 function renderTopicRow(topic) {
@@ -639,9 +664,9 @@ function discussionMaterials() {
     const topic = state.topics.find((t) => t.studentId === student.id);
     return {
       studentId: student.id,
-      title: `${student.name}的课题机制图`,
+      title: `${escapeHTML(student.name)}的课题机制图`,
       src: "",
-      focus: topic ? `${topic.title} — ${topic.phase}` : "暂无课题",
+      focus: topic ? `${escapeHTML(topic.title)} — ${escapeHTML(topic.phase)}` : "暂无课题",
     };
   });
 
@@ -655,10 +680,10 @@ function discussionMaterials() {
     return {
       studentId: student.id,
       center: `${student.name}文献库`,
-      folder: topic?.sourcePath || "待配置",
+      folder: topic?.sourcePath ? escapeHTML(topic.sourcePath) : "待配置",
       nodes: keywords,
       edges,
-      prompt: topic ? `建议追问：${topic.title}中，哪些实验指标最能支撑核心结论，文献是否已经闭环。` : "请先添加课题信息。",
+      prompt: topic ? `建议追问：${escapeHTML(topic.title)}中，哪些实验指标最能支撑核心结论，文献是否已经闭环。` : "请先添加课题信息。",
     };
   });
 
@@ -693,7 +718,7 @@ function renderDiscussion() {
   const graphs = materials.graphs;
   const graph = graphs.find((item) => item.studentId === selectedGraphStudent) || graphs[0];
 
-  $("#discussionView").innerHTML = `
+  $("#discussionView").innerHTML = tr(`
     <div class="panel discussion-band">
       <div class="panel-head">
         <h2>机制图讨论</h2>
@@ -725,10 +750,10 @@ function renderDiscussion() {
       <div class="panel discussion-band">
         <div class="panel-head"><h2>导师追问</h2><span class="tag warn">${graph ? escapeHTML(studentName(graph.studentId)) : "—"}</span></div>
         ${graph ? `
-          <p class="meta">文献路径：${escapeHTML(graph.folder)}</p>
+          <p class="meta">文献路径：${tr(graph.folder)}</p>
           <div class="issue">
             <strong>建议本周讨论的问题</strong>
-            <p>${escapeHTML(graph.prompt)}</p>
+            <p>${tr(graph.prompt)}</p>
           </div>
           <div class="mini-list">
             ${graph.nodes.map((node) => `<span class="tag">${escapeHTML(node)}</span>`).join("")}
@@ -745,7 +770,7 @@ function renderDiscussion() {
         ${materials.suggestions.map(renderSuggestionCard).join("")}
       </div>
     </div>
-  `;
+  `);
 }
 
 function renderMechanismCard(item) {
@@ -757,10 +782,10 @@ function renderMechanismCard(item) {
       <div>
         <div class="row-head">
           <h3>${escapeHTML(studentName(item.studentId))}</h3>
-          <span class="tag blue">${escapeHTML(state.students.find((student) => student.id === item.studentId)?.grade || "")}</span>
+          <span class="tag blue">${tv(state.students.find((student) => student.id === item.studentId)?.grade || "")}</span>
         </div>
-        <strong>${escapeHTML(item.title)}</strong>
-        <p>${escapeHTML(item.focus)}</p>
+        <strong>${tr(item.title)}</strong>
+        <p>${tr(item.focus)}</p>
       </div>
     </article>
   `;
@@ -808,10 +833,10 @@ function renderKnowledgeGraph(graph) {
 function renderSuggestionCard(item) {
   return `
     <article class="suggestion-card">
-      <h3>${escapeHTML(item.title)}</h3>
-      <p><strong>说明</strong><br>${escapeHTML(item.gap)}</p>
-      <p><strong>价值</strong><br>${escapeHTML(item.value)}</p>
-      <p><strong>起步</strong><br>${escapeHTML(item.start)}</p>
+      <h3>${tv(item.title)}</h3>
+      <p><strong>说明</strong><br>${tv(item.gap)}</p>
+      <p><strong>价值</strong><br>${tv(item.value)}</p>
+      <p><strong>起步</strong><br>${tv(item.start)}</p>
     </article>
   `;
 }
@@ -820,12 +845,12 @@ function renderSuggestionCard(item) {
 
 function renderArchive() {
   const scans = state.archiveScans || [];
-  $("#archiveView").innerHTML = `
+  $("#archiveView").innerHTML = tr(`
     <div class="toolbar">
       <input id="archiveSearch" type="search" placeholder="搜索学生、文件或检查点" />
       <div class="toolbar-actions">
         <button class="primary-button" type="button" data-action="scan-archive">扫描学生档案文件夹</button>
-        <span class="tag ok">${escapeHTML(state.settings?.lastArchiveScanAt || "未扫描")}</span>
+        <span class="tag ok">${tv(state.settings?.lastArchiveScanAt || "未扫描")}</span>
       </div>
     </div>
     <div class="grid two-col">
@@ -851,7 +876,7 @@ function renderArchive() {
       </div>
     </div>
     ${renderUnmatchedFolders()}
-  `;
+  `);
 }
 
 function renderUnmatchedFolders() {
@@ -892,7 +917,7 @@ function renderArchiveRow(scan) {
     <article class="list-row searchable" data-text="${escapeHTML(text)}">
       <div class="row-head">
         <div>
-          <h3>${studentName(scan.studentId)} <span class="tag violet">${escapeHTML(scan.version)}</span></h3>
+          <h3>${studentName(scan.studentId)} <span class="tag violet">${tv(scan.version)}</span></h3>
           <div class="meta"><span>${escapeHTML(scan.folder)}</span></div>
         </div>
       </div>
@@ -908,7 +933,7 @@ function renderArchiveRow(scan) {
 /* ── 横向课题 ── */
 
 function renderIndustry() {
-  $("#industryView").innerHTML = `
+  $("#industryView").innerHTML = tr(`
     <div class="toolbar">
       <input id="industrySearch" type="search" placeholder="搜索合作单位、合作老师或后续项目" />
       <button class="primary-button" type="button" data-action="add-industry">新增合作单位</button>
@@ -916,7 +941,7 @@ function renderIndustry() {
     <div class="list">
       ${state.industryProjects.map(renderIndustryRow).join("") || emptyHTML()}
     </div>
-  `;
+  `);
 }
 
 function renderIndustryRow(project) {
@@ -928,14 +953,14 @@ function renderIndustryRow(project) {
           <div class="meta"><span>合作老师：${escapeHTML(project.expert)}</span><span>${escapeHTML(project.expertContact)}</span><span>跟进 ${project.nextMilestone}</span></div>
         </div>
         <div class="row-actions">
-          <span class="tag blue">${escapeHTML(project.status)}</span>
+          <span class="tag blue">${tv(project.status)}</span>
           <button class="small-button" type="button" data-action="attach-file" data-id="industryProjects:${project.id}">关联文件</button>
           <button class="small-button" type="button" data-action="edit-industry" data-id="${project.id}">编辑</button>
           <button class="small-button danger-button" type="button" data-action="delete-industry" data-id="${project.id}">删除</button>
         </div>
       </div>
       <p><strong>后续具体项目</strong>：${escapeHTML(project.deliverable)}</p>
-      <p><strong>学生分工</strong>：${(project.students || []).map(studentName).join("、") || "未分配"}</p>
+      <p><strong>学生分工</strong>：${listJoin((project.students || []).map(studentName)) || "未分配"}</p>
       ${renderAttachments("industryProjects", project)}
       <p class="meta">${escapeHTML(project.notes)}</p>
     </article>
@@ -947,7 +972,7 @@ function renderIndustryRow(project) {
 function renderLeads() {
   const leads = state.collaborationLeads || [];
   const dueCount = leads.filter((lead) => daysBetween(lead.nextFollowUp) >= -7).length;
-  $("#leadsView").innerHTML = `
+  $("#leadsView").innerHTML = tr(`
     <div class="toolbar">
       <input id="leadSearch" type="search" placeholder="搜索单位、联系人、机会或学生" />
       <button class="primary-button" type="button" data-action="add-lead">新增线索</button>
@@ -976,12 +1001,12 @@ function renderLeads() {
         </div>
       </div>
     </div>
-  `;
+  `);
 }
 
 function renderLeadRow(lead) {
   const due = daysBetween(lead.nextFollowUp) >= -7;
-  const resumeNames = (lead.resumeStudents || []).map(studentName).join("、") || "待筛选";
+  const resumeNames = listJoin((lead.resumeStudents || []).map(studentName)) || "待筛选";
   const searchable = `${lead.company} ${lead.contact} ${lead.role} ${lead.status} ${lead.cooperationPotential} ${lead.careerPotential} ${resumeNames}`;
   return `
     <article class="list-row searchable" data-text="${escapeHTML(searchable)}">
@@ -995,8 +1020,8 @@ function renderLeadRow(lead) {
           </div>
         </div>
         <div class="row-actions">
-          <span class="tag ${due ? "warn" : "ok"}">${escapeHTML(lead.status)}</span>
-          <span class="tag blue">${escapeHTML(lead.priority)}优先级</span>
+          <span class="tag ${due ? "warn" : "ok"}">${tv(lead.status)}</span>
+          <span class="tag blue">${tv(lead.priority)}优先级</span>
           <button class="small-button" type="button" data-action="edit-lead" data-id="${lead.id}">编辑</button>
           <button class="small-button danger-button" type="button" data-action="delete-lead" data-id="${lead.id}">删除</button>
         </div>
@@ -1017,7 +1042,7 @@ function renderCrawler() {
   const tasks = state.paperCrawler || [];
   const dayNames = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
   const reviewDayName = dayNames[state.settings.weeklyReviewDay] || "周五";
-  $("#crawlerView").innerHTML = `
+  $("#crawlerView").innerHTML = tr(`
     <div class="toolbar">
       <input id="crawlerSearch" type="search" placeholder="搜索学生、课题范围或关键词" />
       <button class="primary-button" type="button" data-action="run-all-crawlers">抓取本月论文</button>
@@ -1044,7 +1069,7 @@ function renderCrawler() {
         </div>
       </div>
     `}
-  `;
+  `);
 }
 
 function renderCrawlerTask(task) {
@@ -1055,7 +1080,7 @@ function renderCrawlerTask(task) {
     <article class="list-row searchable" data-text="${escapeHTML(text)}">
       <div class="row-head">
         <div>
-          <h3>${escapeHTML(studentName(task.studentId))} <span class="tag blue">${escapeHTML(student?.grade || "")}</span></h3>
+          <h3>${escapeHTML(studentName(task.studentId))} <span class="tag blue">${tv(student?.grade || "")}</span></h3>
           <div class="meta"><span>${escapeHTML(task.scope)}</span><span>上次抓取 ${task.lastRun || "未运行"}</span></div>
         </div>
         <div class="row-actions">
@@ -1065,7 +1090,7 @@ function renderCrawlerTask(task) {
       </div>
       <p><strong>检索式</strong>：${escapeHTML(task.query)}</p>
       <div class="issue-list" id="crawlerFindings-${task.studentId}">
-        ${findings.length ? findings.map(renderPaperFinding).join("") : `<div class="empty-state"><strong>还没有本月论文</strong><p>点击"抓取"后会显示近 ${PAPER_CRAWL_WINDOW_DAYS} 天结果。</p></div>`}
+        ${findings.length ? findings.map(renderPaperFinding).join("") : `<div class="empty-state"><strong>还没有本月论文</strong><p>点击"抓取"后会显示近<span>${PAPER_CRAWL_WINDOW_DAYS}</span>天结果。</p></div>`}
       </div>
     </article>
   `;
@@ -1112,11 +1137,11 @@ function renderDuties() {
       <td>${escapeHTML(duty.category)}</td>
       <td>${duty.hours}</td>
       <td>${duty.points}</td>
-      <td>${escapeHTML(duty.status)}</td>
+      <td>${tv(duty.status)}</td>
       <td><button class="small-button" type="button" data-action="edit-duty" data-id="${duty.id}">编辑</button> <button class="small-button danger-button" type="button" data-action="delete-duty" data-id="${duty.id}">删除</button></td>
     </tr>
   `);
-  $("#dutiesView").innerHTML = `
+  $("#dutiesView").innerHTML = tr(`
     <div class="toolbar">
       <select id="dutyStudentFilter"><option value="">全部学生</option>${optionStudents()}</select>
       <button class="primary-button" type="button" data-action="add-duty">新增事务</button>
@@ -1125,14 +1150,14 @@ function renderDuties() {
       <thead><tr><th>日期</th><th>学生</th><th>事务</th><th>类别</th><th>小时</th><th>积分</th><th>状态</th><th></th></tr></thead>
       <tbody>${rows.join("") || '<tr><td colspan="8" class="meta" style="text-align:center">暂无事务记录</td></tr>'}</tbody>
     </table>
-  `;
+  `);
 }
 
 /* ── 周进展 ── */
 
 function renderWeekly() {
   const drafts = state.weeklyDrafts || [];
-  $("#weeklyView").innerHTML = `
+  $("#weeklyView").innerHTML = tr(`
     <div class="toolbar">
       <select id="weeklyStudentFilter"><option value="">全部学生</option>${optionStudents()}</select>
       <button class="primary-button" type="button" data-action="add-weekly">记录周进展</button>
@@ -1146,7 +1171,7 @@ function renderWeekly() {
     <div class="list">
       ${state.weeklyLogs.sort((a, b) => b.weekOf.localeCompare(a.weekOf)).map(renderWeeklyRow).join("") || emptyHTML()}
     </div>
-  `;
+  `);
 }
 
 function renderWeeklyDraftRow(draft) {
@@ -1233,7 +1258,7 @@ function renderAlumni() {
   const records = alumniRecords()
     .slice()
     .sort((a, b) => String(b.graduationYear || "").localeCompare(String(a.graduationYear || "")) || String(a.name || "").localeCompare(String(b.name || ""), "zh-CN"));
-  $("#alumniView").innerHTML = `
+  $("#alumniView").innerHTML = tr(`
     <div class="toolbar">
       <input id="alumniSearch" type="search" placeholder="搜索姓名、单位、职位、方向或联系方式" />
       <div class="toolbar-actions">
@@ -1263,20 +1288,20 @@ function renderAlumni() {
         ${records.map(renderAlumniRow).join("") || emptyHTML()}
       </div>
     </div>
-  `;
+  `);
 }
 
 function renderAlumniRow(item) {
   const searchable = `${item.name} ${item.graduationYear} ${item.degree} ${item.destinationType} ${item.organization} ${item.position} ${item.location} ${item.contact} ${item.wechat} ${item.email} ${item.researchDirection} ${item.canHelp} ${item.note}`;
   const reachable = alumniContactable(item);
   return `
-    <article class="list-row searchable" data-destination="${escapeHTML(item.destinationType || "")}" data-text="${escapeHTML(searchable)}">
+    <article class="list-row searchable" data-destination="${tv(item.destinationType || "")}" data-text="${escapeHTML(searchable)}">
       <div class="row-head">
         <div>
           <h3>${escapeHTML(item.name)} <span class="tag blue">${escapeHTML(item.graduationYear || "毕业年份待补")}</span></h3>
           <div class="meta">
-            <span>${escapeHTML(item.degree || "学位待补")}</span>
-            <span>${escapeHTML(item.destinationType || "去向待补")}</span>
+            <span>${tv(item.degree || "学位待补")}</span>
+            <span>${tv(item.destinationType || "去向待补")}</span>
             <span>${escapeHTML(item.location || "地区待补")}</span>
           </div>
         </div>
@@ -1349,7 +1374,7 @@ function achievementRanking() {
 function renderAchievements() {
   const achievements = achievementRecords();
   const stats = achievementStats();
-  $("#achievementsView").innerHTML = `
+  $("#achievementsView").innerHTML = tr(`
     <div class="toolbar">
       <input id="achievementSearch" type="search" placeholder="搜索学生、题名、期刊或状态" />
       <div class="toolbar-actions">
@@ -1398,7 +1423,7 @@ function renderAchievements() {
         ${achievements.map(renderAchievementRow).join("") || emptyHTML()}
       </div>
     </div>
-  `;
+  `);
 }
 
 function renderAchievementStudentCard(student) {
@@ -1412,7 +1437,7 @@ function renderAchievementStudentCard(student) {
       <div class="achievement-card-head">
         <div>
           <h3>${escapeHTML(student.name)}</h3>
-          <p>${escapeHTML(student.grade)} · ${escapeHTML(student.status)}</p>
+          <p>${tv(student.grade)} · ${escapeHTML(student.status)}</p>
         </div>
         <span class="achievement-badge ${cardClass}">${publishedSci ? `${publishedSci} 篇 SCI` : active ? "推进中" : "待突破"}</span>
       </div>
@@ -1422,7 +1447,7 @@ function renderAchievementStudentCard(student) {
       </div>
       <p>${latest ? escapeHTML(latest.title) : "暂未记录成果，先从周进展和课题数据中拆出第一条可投稿成果。"}</p>
       <div class="meta">
-        ${items.slice(0, 3).map((item) => `<span class="tag ${statusClass(item.status)}">${escapeHTML(item.status)}</span>`).join("") || '<span class="tag warn">暂无 SCI</span>'}
+        ${items.slice(0, 3).map((item) => `<span class="tag ${statusClass(item.status)}">${tv(item.status)}</span>`).join("") || '<span class="tag warn">暂无 SCI</span>'}
       </div>
     </article>
   `;
@@ -1435,7 +1460,7 @@ function renderAchievementRankRow(row, index) {
       <span class="rank-number">${index + 1}</span>
       <div>
         <strong>${escapeHTML(row.student.name)}</strong>
-        <p>${row.publishedSci ? `已发表/接收 SCI ${row.publishedSci} 篇` : "还没有 SCI 记录"}${nextTarget ? ` · 下一篇：${escapeHTML(nextTarget.status)}` : ""}</p>
+        <p>${row.publishedSci ? `已发表/接收 SCI ${row.publishedSci} 篇` : "还没有 SCI 记录"}${nextTarget ? ` · 下一篇：${tv(nextTarget.status)}` : ""}</p>
       </div>
       <span class="tag ${row.publishedSci ? "ok" : row.active ? "warn" : "danger"}">${row.publishedSci ? "领先" : row.active ? "追赶中" : "待启动"}</span>
     </article>
@@ -1446,20 +1471,20 @@ function renderAchievementRow(item) {
   const searchable = `${studentName(item.studentId)} ${item.title} ${item.journal} ${item.level} ${item.status} ${item.note}`;
   const impactFactor = Number(item.impactFactor || 0);
   return `
-    <article class="list-row searchable" data-status="${escapeHTML(item.status)}" data-text="${escapeHTML(searchable)}">
+    <article class="list-row searchable" data-status="${tv(item.status)}" data-text="${escapeHTML(searchable)}">
       <div class="row-head">
         <div>
           <h3>${escapeHTML(item.title)}</h3>
           <div class="meta">
             <span>${escapeHTML(studentName(item.studentId))}</span>
-            <span>${escapeHTML(item.type)}</span>
+            <span>${tv(item.type)}</span>
             <span>${escapeHTML(item.journal || "期刊待定")}</span>
             <span>${impactFactor ? `IF ${impactFactor.toFixed(1)}` : "IF 待补"}</span>
             <span>${escapeHTML(item.publicationDate || "日期待定")}</span>
           </div>
         </div>
         <div class="row-actions">
-          <span class="tag ${statusClass(item.status)}">${escapeHTML(item.status)}</span>
+          <span class="tag ${statusClass(item.status)}">${tv(item.status)}</span>
           <button class="small-button" type="button" data-action="attach-file" data-id="achievements:${item.id}">关联文件</button>
           <button class="small-button" type="button" data-action="edit-achievement" data-id="${item.id}">编辑</button>
           <button class="small-button danger-button" type="button" data-action="delete-achievement" data-id="${item.id}">删除</button>
@@ -1502,7 +1527,7 @@ function fundingCategoryClass(category) {
 }
 
 function money(value) {
-  return Number(value || 0).toLocaleString("zh-CN", { maximumFractionDigits: 0 });
+  return Number(value || 0).toLocaleString(localeTag(), { maximumFractionDigits: 0 });
 }
 
 function financeRecords() {
@@ -1547,7 +1572,7 @@ function renderFunding() {
   const rows = state.students
     .map((student) => ({ student, finance: financeByStudent(student.id) }))
     .sort((a, b) => b.finance.total - a.finance.total || a.student.name.localeCompare(b.student.name, "zh-CN"));
-  $("#fundingView").innerHTML = `
+  $("#fundingView").innerHTML = tr(`
     <div class="toolbar">
       <input id="fundingSearch" type="search" placeholder="搜索学生、用途、凭证或备注" />
       <div class="toolbar-actions">
@@ -1595,7 +1620,7 @@ function renderFunding() {
         ${financeRecords().slice().sort((a, b) => String(b.date || "").localeCompare(String(a.date || ""))).map(renderFinanceRecordRow).join("") || emptyHTML()}
       </div>
     </div>
-  `;
+  `);
 }
 
 function renderFinanceStudentCard(row) {
@@ -1607,7 +1632,7 @@ function renderFinanceStudentCard(row) {
     <article class="list-row">
       <div class="row-head">
         <div>
-          <h3>${escapeHTML(student.name)} <span class="tag blue">${escapeHTML(student.grade)}</span></h3>
+          <h3>${escapeHTML(student.name)} <span class="tag blue">${tv(student.grade)}</span></h3>
           <div class="meta">
             <span>总投入 ${money(finance.total)} 元</span>
             <span>实验/版面直接成本 ${money(directCost)} 元</span>
@@ -1677,19 +1702,19 @@ function backupStatus() {
   }
   const days = daysBetween(lastExportAt);
   if (days >= EXPORT_DANGER_DAYS) {
-    return { level: "danger", text: `距离上次导出备份已经 ${days} 天，建议立刻导出一份。` };
+    return { level: "danger", text: `距离上次导出备份已经<span>${days}</span>天，建议立刻导出一份。` };
   }
   if (days >= EXPORT_WARN_DAYS) {
-    return { level: "warn", text: `距离上次导出备份已经 ${days} 天，建议导出一份存到网盘或硬盘。` };
+    return { level: "warn", text: `距离上次导出备份已经<span>${days}</span>天，建议导出一份存到网盘或硬盘。` };
   }
-  return { level: "ok", text: days <= 0 ? "今天已导出备份。" : `上次导出备份是 ${days} 天前，状态良好。` };
+  return { level: "ok", text: days <= 0 ? "今天已导出备份。" : `上次导出备份是<span>${days}</span>天前，状态良好。` };
 }
 
 function renderBackupAlert() {
   const status = backupStatus();
   return `
     <div class="backup-alert ${status.level}">
-      <span><strong>数据备份</strong>：${escapeHTML(status.text)}</span>
+      <span><strong>数据备份</strong>：${tr(status.text)}</span>
       <button class="small-button" type="button" data-action="download-latest-backup">导出备份文件</button>
     </div>
   `;
@@ -1697,7 +1722,7 @@ function renderBackupAlert() {
 
 function renderSettings() {
   const backups = getBackups();
-  $("#settingsView").innerHTML = `
+  $("#settingsView").innerHTML = tr(`
     <div class="grid two-col">
       <div class="panel">
         <div class="panel-head"><h2>本地数据</h2></div>
@@ -1736,7 +1761,7 @@ function renderSettings() {
         </form>
       </div>
     </div>
-  `;
+  `);
 }
 
 /* ── 通用 UI 工具 ── */
@@ -1794,8 +1819,8 @@ function resumeCheckboxes(selected = []) {
 /* ── 模态框与表单 ── */
 
 function openModal(title, html, onSubmit) {
-  $("#modalTitle").textContent = title;
-  $("#modalForm").innerHTML = `${html}<div class="form-actions"><button class="small-button" type="button" data-action="close-modal">取消</button><button class="primary-button" type="submit">保存</button></div>`;
+  $("#modalTitle").textContent = t(title);
+  $("#modalForm").innerHTML = tr(`${html}<div class="form-actions"><button class="small-button" type="button" data-action="close-modal">取消</button><button class="primary-button" type="submit">保存</button></div>`);
   $("#modal").classList.remove("hidden");
   $("#modalForm").onsubmit = (event) => {
     event.preventDefault();
@@ -2104,7 +2129,7 @@ function handleAction(action, id) {
 function deleteStudent(id) {
   const student = state.students.find((item) => item.id === id);
   if (!student) return;
-  if (!confirm(`删除 ${student.name}？相关课题、周报、事务、成果、费用和爬虫记录将一并删除。`)) return;
+  if (!confirm(t(`删除 ${student.name}？相关课题、周报、事务、成果、费用和爬虫记录将一并删除。`))) return;
   state.students = state.students.filter((item) => item.id !== id);
   state.topics = state.topics.filter((item) => item.studentId !== id);
   state.weeklyLogs = state.weeklyLogs.filter((item) => item.studentId !== id);
@@ -2121,7 +2146,7 @@ function deleteStudent(id) {
 function deleteAlumni(id) {
   const item = alumniRecords().find((record) => record.id === id);
   if (!item) return;
-  if (!confirm(`删除毕业生"${item.name}"的记录？`)) return;
+  if (!confirm(t(`删除毕业生"${item.name}"的记录？`))) return;
   state.alumni = alumniRecords().filter((record) => record.id !== id);
   saveState();
   render();
@@ -2130,7 +2155,7 @@ function deleteAlumni(id) {
 function deleteAchievement(id) {
   const item = achievementRecords().find((record) => record.id === id);
   if (!item) return;
-  if (!confirm(`删除成果"${item.title}"？`)) return;
+  if (!confirm(t(`删除成果"${item.title}"？`))) return;
   state.achievements = achievementRecords().filter((record) => record.id !== id);
   saveState();
   render();
@@ -2139,7 +2164,7 @@ function deleteAchievement(id) {
 function deleteFinanceRecord(id) {
   const item = financeRecords().find((record) => record.id === id);
   if (!item) return;
-  if (!confirm(`删除费用记录"${item.item || "未命名费用"}"？`)) return;
+  if (!confirm(t(`删除费用记录"${item.item || "未命名费用"}"？`))) return;
   state.financeRecords = financeRecords().filter((record) => record.id !== id);
   saveState();
   render();
@@ -2148,7 +2173,7 @@ function deleteFinanceRecord(id) {
 function deleteTopic(id) {
   const topic = state.topics.find((item) => item.id === id);
   if (!topic) return;
-  if (!confirm(`删除课题"${topic.title}"？`)) return;
+  if (!confirm(t(`删除课题"${topic.title}"？`))) return;
   state.topics = state.topics.filter((item) => item.id !== id);
   saveState();
   render();
@@ -2157,7 +2182,7 @@ function deleteTopic(id) {
 function deleteIndustry(id) {
   const project = state.industryProjects.find((item) => item.id === id);
   if (!project) return;
-  if (!confirm(`删除合作单位"${project.name}"？`)) return;
+  if (!confirm(t(`删除合作单位"${project.name}"？`))) return;
   state.industryProjects = state.industryProjects.filter((item) => item.id !== id);
   saveState();
   render();
@@ -2166,7 +2191,7 @@ function deleteIndustry(id) {
 function deleteLead(id) {
   const lead = state.collaborationLeads.find((item) => item.id === id);
   if (!lead) return;
-  if (!confirm(`删除合作线索"${lead.company}"？`)) return;
+  if (!confirm(t(`删除合作线索"${lead.company}"？`))) return;
   state.collaborationLeads = state.collaborationLeads.filter((item) => item.id !== id);
   saveState();
   render();
@@ -2175,7 +2200,7 @@ function deleteLead(id) {
 function deleteDuty(id) {
   const duty = state.duties.find((item) => item.id === id);
   if (!duty) return;
-  if (!confirm(`删除事务"${duty.title}"？`)) return;
+  if (!confirm(t(`删除事务"${duty.title}"？`))) return;
   state.duties = state.duties.filter((item) => item.id !== id);
   saveState();
   render();
@@ -2184,7 +2209,7 @@ function deleteDuty(id) {
 function deleteWeeklyLog(id) {
   const log = state.weeklyLogs.find((item) => item.id === id);
   if (!log) return;
-  if (!confirm(`删除 ${studentName(log.studentId)} 的周进展 (${log.weekOf})？`)) return;
+  if (!confirm(t(`删除 ${studentName(log.studentId)} 的周进展 (${log.weekOf})？`))) return;
   state.weeklyLogs = state.weeklyLogs.filter((item) => item.id !== id);
   saveState();
   render();
@@ -2238,7 +2263,7 @@ function editWeeklyDraft(id) {
 function deleteWeeklyDraft(id) {
   const draft = state.weeklyDrafts.find((item) => item.id === id);
   if (!draft) return;
-  if (!confirm(`丢弃 ${studentName(draft.studentId)} 的候选周进展？`)) return;
+  if (!confirm(t(`丢弃 ${studentName(draft.studentId)} 的候选周进展？`))) return;
   state.weeklyDrafts = state.weeklyDrafts.filter((item) => item.id !== id);
   saveState();
   render();
@@ -2268,7 +2293,7 @@ function validateImportData(data) {
 function importData() {
   const value = $("#dataBox").value.trim();
   if (!value) {
-    alert("请先把备份 JSON 粘贴到下面的文本框，或改用“从文件导入”。");
+    alert(t("请先把备份 JSON 粘贴到下面的文本框，或改用“从文件导入”。"));
     return;
   }
   applyImportedJSON(value);
@@ -2281,7 +2306,7 @@ async function importDataFromFile(file) {
   try {
     applyImportedJSON(await file.text(), file.name);
   } catch (error) {
-    alert(`读取文件失败：${error.message || "请重试。"}`);
+    alert(t(`读取文件失败：${error.message || "请重试。"}`));
   }
   if (input) input.value = "";
 }
@@ -2291,21 +2316,21 @@ function applyImportedJSON(text, sourceName = "") {
   try {
     next = JSON.parse(text);
   } catch {
-    alert("导入失败：文件不是有效的 JSON 备份。");
+    alert(t("导入失败：文件不是有效的 JSON 备份。"));
     return;
   }
   const error = validateImportData(next);
   if (error) {
-    alert(`导入失败：数据格式不正确。\n${error}`);
+    alert(t(`导入失败：数据格式不正确。\n${error}`));
     return;
   }
-  if (!confirm(`导入${sourceName ? `「${sourceName}」` : ""}会覆盖当前浏览器里的全部数据，确定继续？\n（当前数据会先自动存一份备份。）`)) return;
+  if (!confirm(t(`导入${sourceName ? `「${sourceName}」` : ""}会覆盖当前浏览器里的全部数据，确定继续？\n（当前数据会先自动存一份备份。）`))) return;
   createBackup("导入前自动备份");
   Object.keys(state).forEach((key) => delete state[key]);
   Object.assign(state, migrateState(next));
   saveState();
   render();
-  alert("导入完成。");
+  alert(t("导入完成。"));
 }
 
 /* ── 备份管理 ── */
@@ -2343,7 +2368,7 @@ function setBackups(backups) {
       try {
         localStorage.setItem(BACKUP_KEY, JSON.stringify(fallback));
       } catch (_) {
-        alert('浏览器存储空间已满，备份数据无法保存。请导出重要数据后清理浏览器存储。');
+        alert(t('浏览器存储空间已满，备份数据无法保存。请导出重要数据后清理浏览器存储。'));
       }
     }
   }
@@ -2359,7 +2384,7 @@ function createDailyBackup() {
 function createBackup(reason = "手动备份", download = false, fixedId = "") {
   const backup = {
     id: fixedId || uid("backup"),
-    createdAt: new Date().toLocaleString("zh-CN"),
+    createdAt: new Date().toLocaleString(localeTag()),
     reason,
     data: JSON.parse(JSON.stringify(state)),
   };
@@ -2396,7 +2421,7 @@ function loadBackupToDataBox(id) {
 }
 
 function resetData() {
-  if (!confirm("恢复示例数据会覆盖当前浏览器里的记录。")) return;
+  if (!confirm(t("恢复示例数据会覆盖当前浏览器里的记录。"))) return;
   Object.keys(state).forEach((key) => delete state[key]);
   Object.assign(state, seedData());
   saveState();
@@ -2470,7 +2495,7 @@ async function attachFilesTo(target = "") {
   saveState();
   render();
   const parsed = record.attachments.slice(-files.length).filter((file) => file.excerpt).length;
-  alert(`已关联 ${files.length} 个文件，其中 ${parsed} 个成功读取到文本内容。\n注意：系统只记录文件名和文本摘要，不保存文件本身，原文件请勿删除或移动。`);
+  alert(t(`已关联 ${files.length} 个文件，其中 ${parsed} 个成功读取到文本内容。\n注意：系统只记录文件名和文本摘要，不保存文件本身，原文件请勿删除或移动。`));
 }
 
 /* showOpenFilePicker 只有 Chrome/Edge 支持，其他浏览器回退到隐藏的 file input。 */
@@ -2480,7 +2505,7 @@ function pickFiles() {
       .showOpenFilePicker({ multiple: true })
       .then((handles) => Promise.all(handles.map((handle) => handle.getFile())))
       .catch((error) => {
-        if (error?.name !== "AbortError") alert(`选择文件失败：${error.message || "请重试。"}`);
+        if (error?.name !== "AbortError") alert(t(`选择文件失败：${error.message || "请重试。"}`));
         return [];
       });
   }
@@ -2498,7 +2523,7 @@ function removeAttachment(target = "") {
   const record = findAttachable(collection, recordId);
   if (!record || !record.attachments) return;
   const file = record.attachments.find((item) => item.id === fileId);
-  if (!file || !confirm(`取消关联"${file.name}"？原文件不会被删除。`)) return;
+  if (!file || !confirm(t(`取消关联"${file.name}"？原文件不会被删除。`))) return;
   record.attachments = record.attachments.filter((item) => item.id !== fileId);
   saveState();
   render();
@@ -2508,7 +2533,7 @@ function removeAttachment(target = "") {
 
 async function scanStudentArchive() {
   if (!window.showDirectoryPicker) {
-    alert("当前浏览器不支持直接选择文件夹。可以继续手动维护档案扫描，或换用支持 File System Access API 的浏览器（如 Chrome）。");
+    alert(t("当前浏览器不支持直接选择文件夹。可以继续手动维护档案扫描，或换用支持 File System Access API 的浏览器（如 Chrome）。"));
     return;
   }
   try {
@@ -2518,7 +2543,7 @@ async function scanStudentArchive() {
     lastScanFiles = files;
     applyScanResult(files, todayISO(), true);
   } catch (error) {
-    if (error?.name !== "AbortError") alert(`扫描失败：${error.message || "请重新选择文件夹。"}`);
+    if (error?.name !== "AbortError") alert(t(`扫描失败：${error.message || "请重新选择文件夹。"}`));
   }
 }
 
@@ -2540,22 +2565,22 @@ function applyScanResult(files, scannedAt, announce = false) {
 
   if (!announce) return;
   if (!studentFiles.length) {
-    alert(
+    alert(t(
       unmatched.length
         ? `扫描完成，但没有一个文件夹能对上学生姓名。\n\n扫到这些文件夹：\n${unmatched.slice(0, 8).map((item) => `· ${item.folder}（${item.count} 个文件）`).join("\n")}\n\n在"档案扫描"页面可以把它们手动指派给对应学生。`
         : "扫描完成：所选文件夹里没有找到任何文件。"
-    );
+    ));
     return;
   }
-  alert(
+  alert(t(
     `扫描完成：匹配到 ${studentFiles.length} 位学生的档案，已更新档案扫描并生成周进展候选稿。` +
       (unmatched.length ? `\n\n还有 ${unmatched.length} 个文件夹没对上学生，可以在页面上手动指派。` : "")
-  );
+  ));
 }
 
 function assignFolderToStudent(folder) {
   if (!state.students.length) {
-    alert("请先添加学生，再指派文件夹。");
+    alert(t("请先添加学生，再指派文件夹。"));
     return;
   }
   openModal(
@@ -3021,7 +3046,7 @@ function togglePaperSummary(id) {
 async function runAllCrawlers() {
   const tasks = state.paperCrawler || [];
   if (!tasks.length) {
-    alert("还没有配置论文爬虫。请先添加学生。");
+    alert(t("还没有配置论文爬虫。请先添加学生。"));
     return;
   }
   for (const task of tasks) {
@@ -3035,12 +3060,12 @@ async function runCrawler(studentId, quiet = false) {
   const task = state.paperCrawler.find((item) => item.studentId === studentId);
   if (!task) return;
   if (!task.query) {
-    if (!quiet) alert("请先配置该学生的英文检索关键词。");
+    if (!quiet) alert(t("请先配置该学生的英文检索关键词。"));
     return;
   }
   const target = document.querySelector(`#crawlerFindings-${studentId}`);
   if (target) {
-    target.innerHTML = `<div class="empty-state"><strong>正在抓取</strong><p>正在检索近 ${PAPER_CRAWL_WINDOW_DAYS} 天论文，请稍等。</p></div>`;
+    target.innerHTML = tr(`<div class="empty-state"><strong>正在抓取</strong><p>正在检索近 ${PAPER_CRAWL_WINDOW_DAYS} 天论文，请稍等。</p></div>`);
   }
   try {
     const findings = await fetchRecentPapers(task.query);
@@ -3050,7 +3075,7 @@ async function runCrawler(studentId, quiet = false) {
     if (!quiet) render();
   } catch (error) {
     if (target) {
-      target.innerHTML = `<div class="empty-state"><strong>抓取失败</strong><p>${escapeHTML(error.message || "请检查网络后重试。")}</p></div>`;
+      target.innerHTML = tr(`<div class="empty-state"><strong>抓取失败</strong><p>${escapeHTML(error.message || "请检查网络后重试。")}</p></div>`);
     }
   }
 }
@@ -3262,7 +3287,17 @@ function summarizePaper(title, abstract) {
 /* ── 事件绑定 ── */
 
 function attachEvents() {
+  /* 侧边栏和顶部按钮在切换语言时会整块重绘，所以一律用事件委托，
+     不能直接 addEventListener，否则重绘一次就失效了。 */
   document.body.addEventListener("click", (event) => {
+    const langTarget = event.target.closest("[data-lang]");
+    if (langTarget) {
+      switchLanguage(langTarget.dataset.lang);
+      return;
+    }
+    if (event.target.closest("#quickWeeklyBtn")) weeklyForm();
+    if (event.target.closest("#quickStudentBtn")) studentForm();
+    if (event.target.closest("#notifyBtn")) requestNotifications();
     const actionTarget = event.target.closest("[data-action]");
     if (actionTarget) handleAction(actionTarget.dataset.action, actionTarget.dataset.id);
     const navTarget = event.target.closest("[data-view]");
@@ -3272,13 +3307,10 @@ function attachEvents() {
     }
   });
 
-  $("#quickWeeklyBtn").addEventListener("click", () => weeklyForm());
-  $("#quickStudentBtn").addEventListener("click", () => studentForm());
   $("#modalClose").addEventListener("click", closeModal);
   $("#modal").addEventListener("click", (event) => {
     if (event.target.id === "modal") closeModal();
   });
-  $("#notifyBtn").addEventListener("click", requestNotifications);
 
   document.body.addEventListener("input", (event) => {
     const searchInputs = ["studentSearch", "alumniSearch", "industrySearch", "archiveSearch", "leadSearch", "crawlerSearch", "achievementSearch", "fundingSearch"];
@@ -3347,7 +3379,7 @@ function filterDuty(studentId) {
 
 function requestNotifications() {
   if (!("Notification" in window)) {
-    alert("当前浏览器不支持系统通知。");
+    alert(t("当前浏览器不支持系统通知。"));
     return;
   }
   Notification.requestPermission().then((permission) => {
@@ -3436,8 +3468,43 @@ function initIntroSplash() {
   }, { once: true });
 }
 
+/* ── 语言切换 ──
+   index.html 里的静态文案（侧边栏、开屏动画、空状态模板、顶部按钮）不经过
+   render()，所以先把中文原文存下来，每次切换语言拿原文重新翻译一遍。 */
+
+const STATIC_I18N_NODES = [".sidebar", ".intro-splash", "#emptyTemplate", ".top-actions"];
+const staticOriginals = new Map();
+
+function captureStaticOriginals() {
+  STATIC_I18N_NODES.forEach((selector) => {
+    const node = $(selector);
+    if (node) staticOriginals.set(selector, node.innerHTML);
+  });
+}
+
+function applyStaticTranslations() {
+  staticOriginals.forEach((originalHTML, selector) => {
+    const node = $(selector);
+    if (node) node.innerHTML = tr(originalHTML);
+  });
+  document.title = t("课题组管理台");
+  document.documentElement.lang = getLang() === "zh" ? "zh-CN" : "en";
+  document.querySelectorAll(".lang-switch button").forEach((button) => {
+    button.classList.toggle("active", button.dataset.lang === getLang());
+  });
+}
+
+function switchLanguage(lang) {
+  if (lang === getLang()) return;
+  setLang(lang);
+  applyStaticTranslations();
+  render();
+}
+
 /* ── 启动 ── */
 
+captureStaticOriginals();
+applyStaticTranslations();
 attachEvents();
 render();
 initIntroSplash();
