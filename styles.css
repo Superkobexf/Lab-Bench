@@ -1493,3 +1493,116 @@ h1 {
     transform: none;
   }
 }
+
+/* ── 登录遮罩 ── */
+
+.auth-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: var(--bg, #f4f6f5);
+}
+
+.auth-gate.hidden { display: none; }
+
+.auth-card {
+  width: min(380px, 100%);
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 22px;
+  font-size: 15px;
+}
+
+.auth-brand .brand-mark { width: 30px; height: 30px; }
+
+.auth-form h2 { margin: 0 0 14px; font-size: 17px; }
+
+.auth-form label {
+  display: block;
+  margin: 12px 0 5px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.auth-form input {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff;
+}
+
+.auth-form input:focus {
+  outline: 2px solid var(--accent, #2f6f4f);
+  outline-offset: -1px;
+}
+
+.auth-form .primary-button {
+  width: 100%;
+  margin-top: 18px;
+  justify-content: center;
+}
+
+.auth-form.hidden { display: none; }
+
+.auth-error {
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: #fdeceb;
+  color: #a3271f;
+  font-size: 13px;
+}
+
+.auth-error.hidden { display: none; }
+
+.auth-hint {
+  margin: 14px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* ── 身份与同步状态 ── */
+
+.whoami {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 10px 0 6px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.whoami.hidden { display: none; }
+.whoami #whoamiName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.sync-status {
+  display: inline-block;
+  margin-left: 12px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  vertical-align: middle;
+}
+
+.sync-status.hidden { display: none; }
+.sync-status.pending { background: #eef2f6; color: #4a5b6b; }
+.sync-status.ok { background: #e8f4ec; color: #2f6f4f; }
+.sync-status.error { background: #fdeceb; color: #a3271f; }
+
+.nav-item.hidden { display: none; }

@@ -1,5 +1,3 @@
-const STORAGE_KEY = "lab-group-manager-generic-v1";
-const BACKUP_KEY = "lab-group-manager-generic-backups-v1";
 const APP_VERSION = "generic-v1";
 const PAPER_CRAWL_WINDOW_DAYS = 30;
 const ONE_DAY = 24 * 60 * 60 * 1000;
@@ -7,13 +5,37 @@ const INTRO_SESSION_KEY = "lab-group-intro-seen-v1";
 const INTRO_DURATION_MS = 8600;
 const INTRO_REDUCED_MOTION_MS = 650;
 
-const state = loadState();
+/* 服务端 db.py 里 COLLECTIONS 的镜像。两边必须一致，
+   否则新集合会在同步时被静默丢掉。 */
+const COLLECTIONS = [
+  "students", "alumni", "topics", "industryProjects", "collaborationLeads",
+  "paperCrawler", "duties", "weeklyLogs", "weeklyDrafts", "archiveScans",
+  "achievements", "financeRecords",
+];
+
+const DEFAULT_SETTINGS = {
+  weeklyReviewDay: 5,
+  notifyHour: 17,
+  stipendRate: 80,
+  lastArchiveScanAt: "",
+  unmatchedFolders: [],
+  appVersion: APP_VERSION,
+};
+
+/* 数据在服务器上。这里先建一个空壳，登录后由 loadStateFromServer() 填。
+   serverSnapshot 保存"服务端已知的样子"，saveState() 靠和它做 diff
+   算出该推哪几条——这样 23 处 saveState() 调用点和各处删除代码都不用改，
+   而且写请求是按记录粒度发的，多人同时用不会整包互相覆盖。 */
+const state = emptyState();
+let serverSnapshot = {};
 let currentView = "dashboard";
 let selectedGraphStudent = "example";
 
 const viewMeta = {
   dashboard: ["总览", "学生进展、风险和事务负担的今日快照。"],
   students: ["在读学生", "培养阶段、联系方式、毕业节点和个人目标。"],
+  goals: ["目标与计划", "长期与短期目标、每周工作计划，以及导师批注。"],
+  contracts: ["合同管理", "横向合同多版本存档、关键日期抽取和倒数日提醒。"],
   alumni: ["毕业学生", "毕业去向、现任职位、联系方式和可交流资源。"],
   topics: ["硕士课题", "规划、实验进展、文献库、数据分析和阶段风险。"],
   discussion: ["研讨看板", "机制图、文献知识图谱和待入学课题建议。"],
@@ -183,42 +205,104 @@ function exampleFinanceRecords() {
 
 /* ── 状态管理 ── */
 
-function loadState() {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored) {
-    try {
-      return migrateState(JSON.parse(stored));
-    } catch {
-      localStorage.removeItem(STORAGE_KEY);
-    }
+let syncTimer = 0;
+
+/* 保存结果要看得见。数据在服务器上，静默失败会让人以为已经存好了。 */
+function setSyncStatus(kind, detail = "") {
+  const node = $("#syncStatus");
+  if (!node) return;
+  window.clearTimeout(syncTimer);
+  node.classList.remove("hidden", "ok", "error", "pending");
+  if (kind === "saving") {
+    node.classList.add("pending");
+    node.textContent = t("保存中…");
+    return;
   }
-  const seeded = seedData();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
-  return seeded;
+  if (kind === "error") {
+    node.classList.add("error");
+    node.textContent = `${t("保存失败")}：${detail || t("请重试")}`;
+    return;
+  }
+  node.classList.add("ok");
+  node.textContent = t("已保存");
+  syncTimer = window.setTimeout(() => node.classList.add("hidden"), 2200);
+}
+
+function emptyState() {
+  const base = {};
+  COLLECTIONS.forEach((key) => { base[key] = []; });
+  base.settings = { ...DEFAULT_SETTINGS };
+  return base;
 }
 
 /* 老版本数据里没有后加的模块字段，补齐后再交给渲染层，避免升级后白屏。 */
 function migrateState(data) {
-  const base = seedData();
-  Object.keys(base).forEach((key) => {
-    if (key === "settings") return;
+  COLLECTIONS.forEach((key) => {
     if (!Array.isArray(data[key])) data[key] = [];
   });
-  data.settings = { ...base.settings, ...(data.settings || {}) };
+  data.settings = { ...DEFAULT_SETTINGS, ...(data.settings || {}) };
   data.settings.appVersion = APP_VERSION;
   return data;
 }
 
-function saveState() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch (e) {
-    if (e.name === 'QuotaExceededError' || e instanceof DOMException) {
-      alert(t('浏览器存储空间已满，当前数据无法保存。请导出数据备份后清理部分浏览器数据。'));
-    }
-    return;
+async function loadStateFromServer() {
+  const data = await API.fetchState();
+  const next = migrateState(data.state || {});
+  Object.keys(state).forEach((key) => delete state[key]);
+  Object.assign(state, next);
+  serverSnapshot = snapshotOf(state);
+  return data;
+}
+
+function snapshotOf(source) {
+  const snap = {};
+  COLLECTIONS.forEach((key) => {
+    snap[key] = new Map(
+      (source[key] || []).map((item) => [item.id, JSON.stringify(item)]),
+    );
+  });
+  snap.settings = JSON.stringify(source.settings || {});
+  return snap;
+}
+
+/* 和快照比对，把真正变了的记录推给服务端。
+   出错时把提示留在界面上——静默失败会让人以为存上了。 */
+async function saveState() {
+  const jobs = [];
+  COLLECTIONS.forEach((collection) => {
+    const previous = serverSnapshot[collection] || new Map();
+    const seen = new Set();
+    (state[collection] || []).forEach((item) => {
+      if (!item || !item.id) return;
+      seen.add(item.id);
+      const serialised = JSON.stringify(item);
+      if (previous.get(item.id) !== serialised) {
+        const { id, ...payload } = item;
+        jobs.push(API.putRecord(collection, id, payload));
+      }
+    });
+    previous.forEach((_value, id) => {
+      if (!seen.has(id)) jobs.push(API.deleteRecord(collection, id));
+    });
+  });
+  const settingsNow = JSON.stringify(state.settings || {});
+  if (settingsNow !== serverSnapshot.settings) {
+    const { weeklyReviewDay, notifyHour, stipendRate, lastExportAt,
+            lastArchiveScanAt } = state.settings || {};
+    jobs.push(API.putSettings({
+      weeklyReviewDay, notifyHour, stipendRate, lastExportAt, lastArchiveScanAt,
+    }));
   }
-  createDailyBackup();
+  if (!jobs.length) return true;
+  try {
+    await Promise.all(jobs);
+    serverSnapshot = snapshotOf(state);
+    setSyncStatus("saved");
+    return true;
+  } catch (error) {
+    setSyncStatus("error", error.message);
+    return false;
+  }
 }
 
 function seedData() {
@@ -337,6 +421,8 @@ function render() {
   $(`#${currentView}View`).classList.add("active-view");
 
   renderDashboard();
+  renderGoals();
+  renderContracts();
   renderStudents();
   renderAlumni();
   renderTopics();
@@ -356,6 +442,18 @@ function render() {
 
 function getIssues() {
   const issues = [];
+  /* 合同倒数日直接并进既有的风险流，不另造提醒系统。 */
+  for (const todo of todosCache) {
+    if (!todo.in_reminder_window || todo.done) continue;
+    issues.push({
+      level: todo.level === "overdue" || todo.level === "today" ? "high" : "medium",
+      title: `${escapeHTML(todo.title)}`,
+      body: todo.level === "overdue"
+        ? `已逾期<span>${Math.abs(todo.days_until)}</span>天。`
+        : `还有<span>${todo.days_until}</span>天到期（${escapeHTML(todo.due_date)}）。`,
+      view: todo.source === "contract" ? "contracts" : "dashboard",
+    });
+  }
   for (const student of state.students) {
     const log = latestLog(student.id);
     const days = log ? daysBetween(log.weekOf) : 999;
@@ -476,6 +574,7 @@ function renderDashboard() {
         ${todayTasks.length ? todayTasks.map(renderTodayTask).join("") : '<div class="empty-state"><strong>今天没有紧急事项</strong><p>可以集中看论文、写反馈或整理横向线索。</p></div>'}
       </div>
     </div>
+    <div style="margin-top: 14px;">${renderTodoPanel()}</div>
     <div class="grid two-col" style="margin-top: 14px;">
       <div class="panel">
         <div class="panel-head">
@@ -620,6 +719,787 @@ function renderStudentRow(student) {
       <p>${escapeHTML(student.advisorFocus)}</p>
       <p class="meta">${escapeHTML(student.contact)}</p>
     </article>
+  `;
+}
+
+/* ── 目标与计划（功能一）── */
+
+/* 这三份数据不走 state/localStorage 那套，是登录后按需向服务端要的。
+   学生只会拿到自己的，导师能切换看每个学生的。 */
+let goalsCache = [];
+let plansCache = [];
+let annotationsCache = [];
+let goalsStudentId = "";
+let goalsLoaded = false;
+
+function currentGoalsStudent() {
+  if (!API.isPI) return API.studentId;
+  if (goalsStudentId) return goalsStudentId;
+  return state.students[0]?.id || "";
+}
+
+async function loadGoalsData(force = false) {
+  const target = currentGoalsStudent();
+  if (!target) {
+    goalsCache = []; plansCache = []; annotationsCache = [];
+    goalsLoaded = true;
+    renderGoals();
+    return;
+  }
+  if (goalsLoaded && !force) return;
+  try {
+    const [g, p, a] = await Promise.all([
+      API.listGoals(API.isPI ? target : ""),
+      API.listPlans(API.isPI ? target : ""),
+      API.listAnnotations(API.isPI ? { student_id: target } : {}),
+    ]);
+    goalsCache = g.goals || [];
+    plansCache = p.plans || [];
+    annotationsCache = a.annotations || [];
+    goalsLoaded = true;
+  } catch (error) {
+    setSyncStatus("error", error.message);
+  }
+  renderGoals();
+}
+
+function annotationsFor(type, id) {
+  return annotationsCache.filter(
+    (item) => item.target_type === type && item.target_id === id,
+  );
+}
+
+function renderGoals() {
+  const view = $("#goalsView");
+  if (!view) return;
+  if (!goalsLoaded) {
+    view.innerHTML = tr('<div class="panel"><p class="meta">正在载入…</p></div>');
+    return;
+  }
+  const target = currentGoalsStudent();
+  const longGoals = goalsCache.filter((g) => g.horizon === "long");
+  const shortGoals = goalsCache.filter((g) => g.horizon === "short");
+  const openCount = annotationsCache.filter((a) => !a.resolved).length;
+
+  view.innerHTML = tr(`
+    <div class="toolbar">
+      ${API.isPI ? `
+        <select id="goalsStudentPicker">
+          ${state.students.map((student) => `
+            <option value="${escapeHTML(student.id)}" ${student.id === target ? "selected" : ""}>${escapeHTML(student.name)} · ${tv(student.grade)}</option>
+          `).join("")}
+        </select>` : `<strong>${escapeHTML(studentName(target))}</strong>`}
+      <button class="primary-button" type="button" data-action="add-goal">新增目标</button>
+      <button class="small-button" type="button" data-action="edit-plan">填写本周计划</button>
+      ${openCount ? `<span class="tag warn">${openCount} 条待处理批注</span>` : ""}
+    </div>
+
+    <div class="grid two-col">
+      <div class="panel">
+        <div class="panel-head"><h2>长期目标</h2><span class="tag blue">${longGoals.length} 条</span></div>
+        <div class="list">${longGoals.map(renderGoalRow).join("") || emptyGoalHTML("还没有长期目标")}</div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>短期目标</h2><span class="tag ok">${shortGoals.length} 条</span></div>
+        <div class="list">${shortGoals.map(renderGoalRow).join("") || emptyGoalHTML("还没有短期目标")}</div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top: 14px;">
+      <div class="panel-head"><h2>近期工作计划</h2><span class="tag violet">${plansCache.length} 周</span></div>
+      <div class="list">${plansCache.map(renderPlanRow).join("") || emptyGoalHTML("还没有填写工作计划")}</div>
+    </div>
+  `);
+}
+
+function emptyGoalHTML(message) {
+  return `<div class="empty-state"><strong>${message}</strong><p>点上面的按钮添加一条。</p></div>`;
+}
+
+function goalStatusClass(goal) {
+  if (goal.status === "已完成") return "ok";
+  if (goal.progress >= 60) return "ok";
+  if (goal.progress >= 30) return "warn";
+  return "violet";
+}
+
+function renderGoalRow(goal) {
+  const notes = annotationsFor("goal", goal.id);
+  return `
+    <article class="list-row">
+      <div class="row-head">
+        <div>
+          <h3>${escapeHTML(goal.title)}</h3>
+          <div class="meta">
+            <span class="tag ${goalStatusClass(goal)}">${tv(goal.status)}</span>
+            ${goal.target_date ? `<span>目标日期 ${escapeHTML(goal.target_date)}</span>` : ""}
+            <span>${Number(goal.progress) || 0}%</span>
+          </div>
+        </div>
+        <div class="row-actions">
+          <button class="small-button" type="button" data-action="annotate-goal" data-id="${escapeHTML(goal.id)}">批注${notes.length ? `（${notes.length}）` : ""}</button>
+          <button class="small-button" type="button" data-action="edit-goal" data-id="${escapeHTML(goal.id)}">编辑</button>
+          <button class="small-button danger-button" type="button" data-action="delete-goal" data-id="${escapeHTML(goal.id)}">删除</button>
+        </div>
+      </div>
+      <div class="progress-track"><div class="progress-bar" style="width:${Number(goal.progress) || 0}%"></div></div>
+      ${goal.detail ? `<p>${escapeHTML(goal.detail)}</p>` : ""}
+      ${renderAnnotationList(notes)}
+    </article>
+  `;
+}
+
+function renderPlanRow(plan) {
+  const notes = annotationsFor("plan", plan.id);
+  const items = plan.items || [];
+  const done = items.filter((item) => item.done).length;
+  return `
+    <article class="list-row">
+      <div class="row-head">
+        <div>
+          <h3>${escapeHTML(plan.week_of)} 当周</h3>
+          <div class="meta">
+            <span class="tag ${done === items.length && items.length ? "ok" : "warn"}">${done}/${items.length} 完成</span>
+            <span>${tv(plan.status)}</span>
+          </div>
+        </div>
+        <div class="row-actions">
+          <button class="small-button" type="button" data-action="annotate-plan" data-id="${escapeHTML(plan.id)}">批注${notes.length ? `（${notes.length}）` : ""}</button>
+          <button class="small-button" type="button" data-action="edit-plan" data-id="${escapeHTML(plan.week_of)}">编辑</button>
+        </div>
+      </div>
+      <ul class="plan-items">
+        ${items.map((item) => `
+          <li class="${item.done ? "done" : ""}">
+            <label>
+              <input type="checkbox" data-action="toggle-plan-item"
+                     data-id="${escapeHTML(plan.id)}:${escapeHTML(item.id)}"
+                     ${item.done ? "checked" : ""} />
+              ${escapeHTML(item.text)}
+            </label>
+          </li>
+        `).join("") || '<li class="meta">这一周还没有具体条目。</li>'}
+      </ul>
+      ${renderAnnotationList(notes)}
+    </article>
+  `;
+}
+
+function renderAnnotationList(notes) {
+  if (!notes.length) return "";
+  return `
+    <div class="annotation-list">
+      ${notes.map((note) => `
+        <div class="annotation ${note.author_role === "pi" ? "from-pi" : "from-student"} ${note.resolved ? "resolved" : ""}">
+          <div class="annotation-head">
+            <strong>${escapeHTML(note.author_name || "（已注销）")}</strong>
+            <span class="tag ${note.author_role === "pi" ? "blue" : "violet"}">${note.author_role === "pi" ? "导师" : "学生"}</span>
+            ${note.resolved ? '<span class="tag ok">已处理</span>' : ""}
+            <button class="small-button" type="button" data-action="reply-annotation" data-id="${escapeHTML(note.id)}">回复</button>
+            <button class="small-button" type="button" data-action="resolve-annotation" data-id="${escapeHTML(note.id)}">${note.resolved ? "重新打开" : "标记已处理"}</button>
+          </div>
+          <p>${escapeHTML(note.body)}</p>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+/* ── 目标与计划的表单 ── */
+
+function goalForm(goal = {}) {
+  const isNew = !goal.id;
+  openModal(
+    isNew ? "新增目标" : "编辑目标",
+    [
+      field("title", "目标", "text", goal.title || ""),
+      field("horizon", "类型", "select", goal.horizon || "short", "", [["short", "短期目标"], ["long", "长期目标"]]),
+      field("target_date", "目标日期", "date", goal.target_date || ""),
+      field("status", "状态", "select", goal.status || "进行中", "", [["进行中", "进行中"], ["有风险", "有风险"], ["已完成", "已完成"], ["已搁置", "已搁置"]]),
+      field("progress", "完成度 %", "number", goal.progress ?? 0),
+      field("detail", "具体说明", "textarea", goal.detail || ""),
+    ].join(""),
+    async (values) => {
+      const body = {
+        horizon: values.horizon,
+        title: values.title,
+        detail: values.detail || "",
+        target_date: values.target_date || "",
+        status: values.status,
+        progress: Math.max(0, Math.min(100, Number(values.progress) || 0)),
+      };
+      try {
+        if (isNew) {
+          if (API.isPI) body.student_id = currentGoalsStudent();
+          await API.createGoal(body);
+        } else {
+          await API.updateGoal(goal.id, body);
+        }
+        await loadGoalsData(true);
+        setSyncStatus("saved");
+      } catch (error) {
+        setSyncStatus("error", error.message);
+        alert(error.message);
+      }
+    },
+    { skipStateSave: true },
+  );
+}
+
+function planForm(weekOf = "") {
+  const week = weekOf || mondayOf(todayISO());
+  const existing = plansCache.find((plan) => plan.week_of === week);
+  const lines = (existing?.items || []).map((item) => item.text).join("\n");
+  openModal(
+    "本周工作计划",
+    [
+      field("week_of", "周起始日", "date", week),
+      field("items", "计划条目（每行一条）", "textarea", lines),
+      field("status", "状态", "select", existing?.status || "草稿", "", [["草稿", "草稿"], ["已提交", "已提交"]]),
+    ].join(""),
+    async (values) => {
+      const previous = new Map((existing?.items || []).map((item) => [item.text, item]));
+      const items = String(values.items || "")
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .slice(0, 60)
+        .map((text, index) => {
+          const before = previous.get(text);
+          return {
+            id: before?.id || `pi_${index}_${Math.random().toString(36).slice(2, 8)}`,
+            text: text.slice(0, 300),
+            done: before?.done || false,
+            goal_id: before?.goal_id || null,
+          };
+        });
+      const body = { week_of: values.week_of, items, status: values.status };
+      if (API.isPI) body.student_id = currentGoalsStudent();
+      try {
+        await API.savePlan(body);
+        await loadGoalsData(true);
+        setSyncStatus("saved");
+      } catch (error) {
+        setSyncStatus("error", error.message);
+        alert(error.message);
+      }
+    },
+    { skipStateSave: true },
+  );
+}
+
+/* 周计划按自然周归档，统一取周一，避免同一周被存成好几条。 */
+function mondayOf(iso) {
+  const date = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return iso;
+  const shift = (date.getDay() + 6) % 7;
+  date.setDate(date.getDate() - shift);
+  return date.toISOString().slice(0, 10);
+}
+
+function annotationForm(targetType, targetId, parentId = "") {
+  openModal(
+    parentId ? "回复批注" : "写批注",
+    field("body", "内容", "textarea", ""),
+    async (values) => {
+      if (!String(values.body || "").trim()) return;
+      try {
+        await API.createAnnotation({
+          target_type: targetType,
+          target_id: targetId,
+          parent_id: parentId || null,
+          body: values.body.trim(),
+        });
+        await loadGoalsData(true);
+      } catch (error) {
+        alert(error.message);
+      }
+    },
+    { skipStateSave: true },
+  );
+}
+
+async function togglePlanItem(compound) {
+  const [planId, itemId] = String(compound).split(":");
+  const plan = plansCache.find((item) => item.id === planId);
+  if (!plan) return;
+  const items = (plan.items || []).map((item) =>
+    item.id === itemId ? { ...item, done: !item.done } : item,
+  );
+  const body = { week_of: plan.week_of, items, status: plan.status };
+  if (API.isPI) body.student_id = plan.student_id;
+  try {
+    await API.savePlan(body);
+    await loadGoalsData(true);
+  } catch (error) {
+    setSyncStatus("error", error.message);
+  }
+}
+
+/* ── 目标与计划的其余动作 ── */
+
+async function removeGoal(id) {
+  const goal = goalsCache.find((item) => item.id === id);
+  if (!goal || !confirm(t(`删除目标「${goal.title}」？`))) return;
+  try {
+    await API.deleteGoal(id);
+    await loadGoalsData(true);
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+function replyToAnnotation(id) {
+  const note = annotationsCache.find((item) => item.id === id);
+  if (!note) return;
+  annotationForm(note.target_type, note.target_id, note.id);
+}
+
+async function toggleAnnotationResolved(id) {
+  const note = annotationsCache.find((item) => item.id === id);
+  if (!note) return;
+  try {
+    await API.updateAnnotation(id, { resolved: !note.resolved });
+    await loadGoalsData(true);
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+/* ── 合同管理（功能二）── */
+
+let contractsCache = [];
+let ocrStatus = { available: false, reason: "" };
+let contractsLoaded = false;
+let openVersion = null;
+
+async function loadContracts(force = false) {
+  if (!API.isPI) return;
+  if (contractsLoaded && !force) return;
+  try {
+    const data = await API.listContracts();
+    contractsCache = data.contracts || [];
+    ocrStatus = data.ocr || ocrStatus;
+    contractsLoaded = true;
+  } catch (error) {
+    setSyncStatus("error", error.message);
+  }
+  renderContracts();
+}
+
+function renderContracts() {
+  const view = $("#contractsView");
+  if (!view) return;
+  if (!API.isPI) {
+    view.innerHTML = tr('<div class="panel"><p class="meta">合同资料只对导师账号开放。</p></div>');
+    return;
+  }
+  if (!contractsLoaded) {
+    view.innerHTML = tr('<div class="panel"><p class="meta">正在载入…</p></div>');
+    return;
+  }
+  view.innerHTML = tr(`
+    <div class="toolbar">
+      <button class="primary-button" type="button" data-action="add-contract">新建合同</button>
+      ${ocrStatus.available
+        ? `<span class="tag ok">扫描件识别可用（${escapeHTML(ocrStatus.engine || "OCR")}）</span>`
+        : `<span class="tag warn">扫描件识别不可用</span>`}
+    </div>
+    ${ocrStatus.available ? "" : `
+      <div class="backup-alert warn">
+        <span><strong>扫描件无法自动识别</strong>：${escapeHTML(ocrStatus.reason || "服务器未安装 OCR 引擎。")}数字版合同（Word 导出、电子签生成的 PDF）不受影响，仍能自动抽取。</span>
+      </div>`}
+    <div class="list">
+      ${contractsCache.map(renderContractRow).join("") || emptyGoalHTML("还没有上传合同")}
+    </div>
+  `);
+}
+
+function renderContractRow(contract) {
+  const project = state.industryProjects.find((item) => item.id === contract.project_id);
+  const pending = contract.versions.reduce((sum, v) => sum + v.item_pending, 0);
+  return `
+    <article class="list-row">
+      <div class="row-head">
+        <div>
+          <h3>${escapeHTML(contract.title)}</h3>
+          <div class="meta">
+            <span>${escapeHTML(project?.name || "（横向课题已删除）")}</span>
+            ${contract.counterparty ? `<span>${escapeHTML(contract.counterparty)}</span>` : ""}
+            <span>${contract.versions.length} 个版本</span>
+            ${pending ? `<span class="tag warn">${pending} 条待确认</span>` : ""}
+          </div>
+        </div>
+        <div class="row-actions">
+          <button class="small-button" type="button" data-action="upload-contract" data-id="${escapeHTML(contract.id)}">上传新版本</button>
+          <button class="small-button danger-button" type="button" data-action="delete-contract" data-id="${escapeHTML(contract.id)}">删除</button>
+        </div>
+      </div>
+      <table class="table">
+        <thead><tr><th>版本</th><th>文件</th><th>版本说明</th><th>解析</th><th>候选</th><th></th></tr></thead>
+        <tbody>
+          ${contract.versions.map((version) => `
+            <tr>
+              <td>v${Number(version.version_no) || 0}</td>
+              <td>${escapeHTML(version.filename)}</td>
+              <td>${escapeHTML(version.version_note || "—")}</td>
+              <td>${renderOcrBadge(version)}</td>
+              <td>${Number(version.item_confirmed) || 0} / ${Number(version.item_total) || 0}</td>
+              <td>
+                <button class="small-button" type="button" data-action="view-contract-version" data-id="${escapeHTML(version.id)}">查看条目</button>
+                <button class="small-button" type="button" data-action="reparse-version" data-id="${escapeHTML(version.id)}">重新解析</button>
+              </td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+      ${openVersion && openVersion.contract_id === contract.id ? renderVersionItems() : ""}
+    </article>
+  `;
+}
+
+function renderOcrBadge(version) {
+  if (version.ocr_status === "done") {
+    return `<span class="tag ok">${escapeHTML(version.ocr_engine || "已解析")}</span>`;
+  }
+  if (version.ocr_status === "no_text") {
+    return `<span class="tag danger" title="${escapeHTML(version.ocr_error || "")}">取不到文字</span>`;
+  }
+  if (version.ocr_status === "running") return '<span class="tag warn">解析中</span>';
+  return '<span class="tag">待解析</span>';
+}
+
+function renderVersionItems() {
+  const { items, version, ocr_error: ocrError } = openVersion;
+  if (!items.length) {
+    return `
+      <div class="panel" style="margin-top: 12px;">
+        <div class="panel-head"><h2>v${Number(version.version_no) || 0} 抽取结果</h2></div>
+        <div class="empty-state">
+          <strong>没有抽到候选条目</strong>
+          <p>${escapeHTML(ocrError || "这份文件里没有找到「日期 + 交付/验收/付款」这类组合。可以手动新建待办。")}</p>
+        </div>
+      </div>`;
+  }
+  const pending = items.filter((item) => !item.confirmed && !item.dismissed);
+  const handled = items.filter((item) => item.confirmed || item.dismissed);
+  return `
+    <div class="panel" style="margin-top: 12px;">
+      <div class="panel-head">
+        <h2>v${Number(version.version_no) || 0} 抽取结果</h2>
+        <span class="tag warn">${pending.length} 条待确认</span>
+      </div>
+      <p class="meta">抽取结果只是候选。确认之后才会变成待办并开始倒数日提醒——OCR 和规则都会误读，请核对原文。</p>
+      <div class="issue-list">
+        ${pending.map(renderContractItem).join("")}
+        ${handled.map(renderContractItem).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderContractItem(item) {
+  const value = item.kind === "amount"
+    ? `${money(item.parsed_amount || 0)} 元`
+    : escapeHTML(item.parsed_date || "—");
+  const confidence = Math.round((Number(item.confidence) || 0) * 100);
+  return `
+    <div class="issue ${item.dismissed ? "dismissed" : ""}">
+      <div class="row-head">
+        <div>
+          <strong>${escapeHTML(item.title || "（无标题）")}</strong>
+          <div class="meta">
+            <span class="tag ${item.kind === "date" ? "blue" : "violet"}">${item.kind === "date" ? "日期" : "金额"}</span>
+            <span>${value}</span>
+            <span class="tag ${confidence >= 90 ? "ok" : confidence >= 70 ? "warn" : "danger"}">可信度 ${confidence}%</span>
+            ${item.confirmed ? '<span class="tag ok">已确认</span>' : ""}
+            ${item.dismissed ? '<span class="tag">已忽略</span>' : ""}
+          </div>
+        </div>
+        <div class="row-actions">
+          ${item.kind === "date" && !item.confirmed
+            ? `<button class="small-button" type="button" data-action="confirm-item" data-id="${escapeHTML(item.id)}">确认并建待办</button>` : ""}
+          ${item.confirmed
+            ? `<button class="small-button" type="button" data-action="unconfirm-item" data-id="${escapeHTML(item.id)}">撤销确认</button>` : ""}
+          <button class="small-button" type="button" data-action="edit-item" data-id="${escapeHTML(item.id)}">修改</button>
+          ${!item.dismissed
+            ? `<button class="small-button" type="button" data-action="dismiss-item" data-id="${escapeHTML(item.id)}">忽略</button>` : ""}
+        </div>
+      </div>
+      <p class="meta">${escapeHTML(item.raw_text || "")}</p>
+    </div>
+  `;
+}
+
+function contractForm() {
+  if (!state.industryProjects.length) {
+    alert(t("请先在「横向课题」页面添加合作单位，再上传合同。"));
+    return;
+  }
+  openModal(
+    "新建合同",
+    [
+      field("title", "合同名称", "text", ""),
+      field("project_id", "所属横向课题", "select", "", "",
+        state.industryProjects.map((project) => [project.id, project.name])),
+      field("counterparty", "对方单位", "text", ""),
+    ].join(""),
+    async (values) => {
+      try {
+        await API.createContract({
+          project_id: values.project_id,
+          title: values.title,
+          counterparty: values.counterparty || "",
+        });
+        await loadContracts(true);
+      } catch (error) {
+        alert(error.message);
+      }
+    },
+    { skipStateSave: true },
+  );
+}
+
+async function removeContract(id) {
+  const contract = contractsCache.find((item) => item.id === id);
+  if (!contract) return;
+  if (!confirm(t(`删除合同「${contract.title}」及其全部版本？此操作不可恢复。`))) return;
+  try {
+    await API.deleteContract(id);
+    if (openVersion && openVersion.contract_id === id) openVersion = null;
+    await loadContracts(true);
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+/* 文件不经过服务器以外的任何地方：直接 POST 到自己的服务器。 */
+function promptContractUpload(contractId) {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".pdf,.docx,.txt,.md,.png,.jpg,.jpeg,.webp,.bmp,.tif,.tiff";
+  input.addEventListener("change", async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    const note = prompt(t("这个版本的说明（比如「原合同」「补充协议」）："), "") ?? "";
+    setSyncStatus("saving");
+    try {
+      const result = await API.uploadContractVersion(contractId, file, note);
+      await loadContracts(true);
+      setSyncStatus("saved");
+      describeParse(result.parse);
+    } catch (error) {
+      setSyncStatus("error", error.message);
+      alert(error.message);
+    }
+  });
+  input.click();
+}
+
+/* 三种结果要分开说清楚，不能一律显示"没找到日期"。 */
+function describeParse(parse) {
+  if (!parse) return;
+  if (parse.status === "no_text") {
+    alert(t(`没能从文件里读到文字。\n${parse.error || ""}\n\n如果这是扫描件或拍照件，请手动填写关键日期。`));
+    return;
+  }
+  if (!parse.item_count) {
+    alert(t("文件已解析，但没有找到「日期 + 交付/验收/付款」这类组合。可以手动新建待办。"));
+    return;
+  }
+  alert(t(`解析完成，抽到 ${parse.item_count} 条候选，请逐条确认后再生成待办。`));
+}
+
+async function openContractVersion(versionId) {
+  try {
+    const data = await API.listContractItems(versionId);
+    openVersion = {
+      contract_id: data.version.contract_id,
+      version: data.version,
+      items: data.items,
+      ocr_error: data.ocr_error,
+    };
+    renderContracts();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+async function reparseContractVersion(versionId) {
+  setSyncStatus("saving");
+  try {
+    const result = await API.reparseVersion(versionId);
+    await loadContracts(true);
+    if (openVersion && openVersion.version.id === versionId) {
+      await openContractVersion(versionId);
+    }
+    setSyncStatus("saved");
+    describeParse(result.parse);
+  } catch (error) {
+    setSyncStatus("error", error.message);
+    alert(error.message);
+  }
+}
+
+async function setContractItem(itemId, patch) {
+  try {
+    await API.patchContractItem(itemId, patch);
+    if (openVersion) await openContractVersion(openVersion.version.id);
+    await loadContracts(true);
+    await loadTodos(true);
+    renderDashboard();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+function contractItemForm(itemId) {
+  const item = openVersion?.items.find((entry) => entry.id === itemId);
+  if (!item) return;
+  openModal(
+    "修改抽取条目",
+    [
+      field("title", "标题", "text", item.title || ""),
+      field("parsed_date", "日期", "date", item.parsed_date || ""),
+      field("remind_days_before", "提前几天提醒", "number", 7),
+    ].join(""),
+    async (values) => {
+      await setContractItem(itemId, {
+        title: values.title,
+        parsed_date: values.parsed_date || "",
+        remind_days_before: Number(values.remind_days_before) || 7,
+      });
+    },
+    { skipStateSave: true },
+  );
+}
+
+/* ── 待办与倒数日 ── */
+
+let todosCache = [];
+let todoCounts = { overdue: 0, today: 0, upcoming: 0 };
+let todosLoaded = false;
+
+async function loadTodos(force = false) {
+  if (todosLoaded && !force) return;
+  try {
+    const data = await API.listTodos();
+    todosCache = data.todos || [];
+    todoCounts = data.counts || todoCounts;
+    todosLoaded = true;
+  } catch (error) {
+    setSyncStatus("error", error.message);
+  }
+}
+
+function todoForm() {
+  openModal(
+    "新增待办",
+    [
+      field("title", "事项", "text", ""),
+      field("due_date", "到期日", "date", ""),
+      field("remind_days_before", "提前几天提醒", "number", 7),
+      ...(API.isPI ? [studentSelectFieldOptional("student_id", "指派给")] : []),
+      field("detail", "备注", "textarea", ""),
+    ].join(""),
+    async (values) => {
+      try {
+        await API.createTodo({
+          title: values.title,
+          detail: values.detail || "",
+          due_date: values.due_date || "",
+          remind_days_before: Number(values.remind_days_before) || 7,
+          student_id: values.student_id || null,
+        });
+        await loadTodos(true);
+        renderDashboard();
+      } catch (error) {
+        alert(error.message);
+      }
+    },
+    { skipStateSave: true },
+  );
+}
+
+function studentSelectFieldOptional(name, label) {
+  const options = [["", "不指派"]].concat(
+    state.students.map((student) => [student.id, student.name]),
+  );
+  return field(name, label, "select", "", "", options);
+}
+
+async function toggleTodo(id) {
+  const todo = todosCache.find((item) => item.id === id);
+  if (!todo) return;
+  try {
+    await API.updateTodo(id, { done: !todo.done });
+    await loadTodos(true);
+    renderDashboard();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+async function removeTodo(id) {
+  const todo = todosCache.find((item) => item.id === id);
+  if (!todo || !confirm(t(`删除待办「${todo.title}」？`))) return;
+  try {
+    await API.deleteTodo(id);
+    await loadTodos(true);
+    renderDashboard();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+function todoLevelClass(level) {
+  if (level === "overdue") return "danger";
+  if (level === "today" || level === "high") return "warn";
+  if (level === "medium") return "violet";
+  return "ok";
+}
+
+function todoCountdownText(todo) {
+  if (todo.days_until === null || todo.days_until === undefined) return "没有到期日";
+  if (todo.days_until < 0) return `已逾期 ${Math.abs(todo.days_until)} 天`;
+  if (todo.days_until === 0) return "今天到期";
+  return `还有 ${todo.days_until} 天`;
+}
+
+function renderTodoPanel() {
+  const visible = todosCache.slice(0, 8);
+  return `
+    <div class="panel">
+      <div class="panel-head">
+        <h2>倒数日与待办</h2>
+        <span class="tag ${todoCounts.overdue ? "danger" : todoCounts.today ? "warn" : "ok"}">
+          ${todoCounts.overdue ? `${todoCounts.overdue} 条逾期` : todoCounts.today ? `${todoCounts.today} 条今天到期` : "没有逾期"}
+        </span>
+      </div>
+      <div class="issue-list">
+        ${visible.map((todo) => `
+          <div class="issue ${todo.level === "overdue" ? "high" : ""}">
+            <div class="row-head">
+              <div>
+                <strong>${escapeHTML(todo.title)}</strong>
+                <div class="meta">
+                  <span class="tag ${todoLevelClass(todo.level)}">${todoCountdownText(todo)}</span>
+                  ${todo.due_date ? `<span>${escapeHTML(todo.due_date)}</span>` : ""}
+                  ${todo.source === "contract" ? '<span class="tag blue">来自合同</span>' : ""}
+                  ${todo.student_id ? `<span>${studentNameHTML(todo.student_id)}</span>` : ""}
+                </div>
+              </div>
+              <div class="row-actions">
+                <button class="small-button" type="button" data-action="toggle-todo" data-id="${escapeHTML(todo.id)}">完成</button>
+                <button class="small-button danger-button" type="button" data-action="delete-todo" data-id="${escapeHTML(todo.id)}">删除</button>
+              </div>
+            </div>
+          </div>
+        `).join("") || '<div class="empty-state"><strong>没有待办</strong><p>确认合同里的关键日期，或手动添加一条。</p></div>'}
+      </div>
+      <div style="height: 10px;"></div>
+      <button class="small-button" type="button" data-action="add-todo">新增待办</button>
+    </div>
   `;
 }
 
@@ -1733,39 +2613,28 @@ function renderBackupAlert() {
   return `
     <div class="backup-alert ${status.level}">
       <span><strong>数据备份</strong>：${tr(status.text)}</span>
-      <button class="small-button" type="button" data-action="download-latest-backup">导出备份文件</button>
+      <button class="small-button" type="button" data-action="download-backup">导出备份文件</button>
     </div>
   `;
 }
 
 function renderSettings() {
-  const backups = getBackups();
   $("#settingsView").innerHTML = tr(`
     <div class="grid two-col">
       <div class="panel">
-        <div class="panel-head"><h2>本地数据</h2></div>
-        <p class="meta">导出 JSON 后可以备份到自己的网盘或硬盘；导入会覆盖当前浏览器里的数据。</p>
+        <div class="panel-head"><h2>数据</h2><span class="tag blue">服务器</span></div>
+        <p class="meta">数据保存在课题组服务器上，多人共用同一份。导出 JSON 可以备份到自己的网盘或硬盘；导入会覆盖服务器上的同名记录。</p>
         ${renderBackupAlert()}
         <div class="settings-actions" style="margin-top: 14px;">
-          <button class="primary-button" type="button" data-action="export-data">导出数据</button>
-          <button class="small-button" type="button" data-action="create-backup">生成备份</button>
-          <button class="small-button" type="button" data-action="download-latest-backup">下载最新备份</button>
+          <button class="primary-button" type="button" data-action="download-backup">下载备份文件</button>
+          <button class="small-button" type="button" data-action="export-data">在下方显示</button>
           <button class="small-button" type="button" data-action="choose-import-file">从文件导入</button>
           <button class="small-button" type="button" data-action="import-data">导入粘贴内容</button>
           <button class="small-button danger-button" type="button" data-action="reset-data">恢复示例</button>
         </div>
         <input id="importFileInput" type="file" accept="application/json,.json" hidden />
         <textarea id="dataBox" class="textarea-export" placeholder="导出的数据会显示在这里；也可以把备份 JSON 粘贴到这里后点“导入粘贴内容”。"></textarea>
-        <div class="backup-list">
-          <strong>备份版本</strong>
-          ${backups.length ? backups.slice(0, 10).map((backup) => `
-            <div class="backup-row">
-              <span>${escapeHTML(backup.createdAt)}</span>
-              <span>${escapeHTML(backup.reason)}</span>
-              <button class="small-button" type="button" data-action="load-backup" data-id="${escapeHTML(backup.id)}">查看</button>
-            </div>
-          `).join("") : '<p class="meta">还没有备份。保存数据时会每天自动留一份，也可以手动生成。</p>'}
-        </div>
+        <p class="meta">服务器上的自动备份由运维脚本负责（见 deploy/README）。这里的导出是给你自己留一份离线副本用的。</p>
       </div>
       <div class="panel">
         <div class="panel-head"><h2>规则设置</h2></div>
@@ -1836,21 +2705,31 @@ function resumeCheckboxes(selected = []) {
 
 /* ── 模态框与表单 ── */
 
-function openModal(title, html, onSubmit) {
+function openModal(title, html, onSubmit, options = {}) {
   $("#modalTitle").textContent = t(title);
   $("#modalForm").innerHTML = tr(`${html}<div class="form-actions"><button class="small-button" type="button" data-action="close-modal">取消</button><button class="primary-button" type="submit">保存</button></div>`);
   $("#modal").classList.remove("hidden");
-  $("#modalForm").onsubmit = (event) => {
+  $("#modalForm").onsubmit = async (event) => {
     event.preventDefault();
+    const submit = event.currentTarget.querySelector("button[type=submit]");
+    if (submit) submit.disabled = true;
     const formData = new FormData(event.currentTarget);
     const values = Object.fromEntries(formData.entries());
     const studentIds = formData.getAll("studentIds");
     if (studentIds.length > 0) values.studentIds = studentIds;
-    onSubmit(values);
-    saveState();
-    closeModal();
-    render();
-    maybeNotify();
+    try {
+      await onSubmit(values);
+      /* 目标、计划、批注这些自己直接调接口，不能再走全局的 state 同步。 */
+      if (!options.skipStateSave) {
+        setSyncStatus("saving");
+        if (!(await saveState())) return;
+      }
+      closeModal();
+      render();
+      maybeNotify();
+    } finally {
+      if (submit) submit.disabled = false;
+    }
   };
 }
 
@@ -2120,17 +2999,33 @@ function handleAction(action, id) {
     renderDiscussion();
   }
   if (action === "close-modal") closeModal();
+  if (action === "add-goal") goalForm();
+  if (action === "edit-goal") goalForm(goalsCache.find((item) => item.id === id));
+  if (action === "delete-goal") removeGoal(id);
+  if (action === "edit-plan") planForm(id);
+  if (action === "toggle-plan-item") togglePlanItem(id);
+  if (action === "annotate-goal") annotationForm("goal", id);
+  if (action === "annotate-plan") annotationForm("plan", id);
+  if (action === "reply-annotation") replyToAnnotation(id);
+  if (action === "resolve-annotation") toggleAnnotationResolved(id);
+  if (action === "add-contract") contractForm();
+  if (action === "delete-contract") removeContract(id);
+  if (action === "upload-contract") promptContractUpload(id);
+  if (action === "view-contract-version") openContractVersion(id);
+  if (action === "reparse-version") reparseContractVersion(id);
+  if (action === "confirm-item") setContractItem(id, { confirmed: true });
+  if (action === "unconfirm-item") setContractItem(id, { confirmed: false });
+  if (action === "dismiss-item") setContractItem(id, { dismissed: true });
+  if (action === "edit-item") contractItemForm(id);
+  if (action === "add-todo") todoForm();
+  if (action === "toggle-todo") toggleTodo(id);
+  if (action === "delete-todo") removeTodo(id);
   if (action === "settings") {
     currentView = "settings";
     render();
   }
-  if (action === "export-data") $("#dataBox").value = JSON.stringify(state, null, 2);
-  if (action === "create-backup") {
-    createBackup("手动备份", true);
-    render();
-  }
-  if (action === "download-latest-backup") downloadLatestBackup();
-  if (action === "load-backup") loadBackupToDataBox(id);
+  if (action === "export-data") exportToDataBox();
+  if (action === "download-backup") downloadServerBackup();
   if (action === "import-data") importData();
   if (action === "choose-import-file") $("#importFileInput")?.click();
   if (action === "reset-data") resetData();
@@ -2329,7 +3224,7 @@ async function importDataFromFile(file) {
   if (input) input.value = "";
 }
 
-function applyImportedJSON(text, sourceName = "") {
+async function applyImportedJSON(text, sourceName = "") {
   let next;
   try {
     next = JSON.parse(text);
@@ -2342,108 +3237,64 @@ function applyImportedJSON(text, sourceName = "") {
     alert(t(`导入失败：数据格式不正确。\n${error}`));
     return;
   }
-  if (!confirm(t(`导入${sourceName ? `「${sourceName}」` : ""}会覆盖当前浏览器里的全部数据，确定继续？\n（当前数据会先自动存一份备份。）`))) return;
-  createBackup("导入前自动备份");
-  Object.keys(state).forEach((key) => delete state[key]);
-  Object.assign(state, migrateState(next));
-  saveState();
-  render();
-  alert(t("导入完成。"));
-}
-
-/* ── 备份管理 ── */
-
-function getBackups() {
+  if (!confirm(t(`导入${sourceName ? `「${sourceName}」` : ""}会覆盖服务器上的同名记录，确定继续？\n（建议先导出一份当前数据。）`))) return;
   try {
-    return JSON.parse(localStorage.getItem(BACKUP_KEY) || "[]");
-  } catch {
-    return [];
+    setSyncStatus("saving");
+    const result = await API.importBackup(text);
+    await loadStateFromServer();
+    render();
+    setSyncStatus("saved");
+    const total = Object.values(result.imported || {}).reduce((sum, n) => sum + n, 0);
+    alert(t(`导入完成，共 ${total} 条记录。`));
+  } catch (err) {
+    setSyncStatus("error", err.message);
+    alert(`${t("导入失败")}：${err.message}`);
   }
 }
 
-function setBackups(backups) {
-  const manualBackups = backups.filter((b) => !b.id.startsWith("auto-"));
-  const autoBackups = backups.filter((b) => b.id.startsWith("auto-"));
-  const recentAuto = [];
-  const seenDates = new Set();
-  for (const b of autoBackups.sort((a, b) => b.createdAt.localeCompare(a.createdAt))) {
-    const dateKey = b.id.replace("auto-", "");
-    if (!seenDates.has(dateKey)) {
-      seenDates.add(dateKey);
-      recentAuto.push(b);
-    }
-  }
-  const retained = [...manualBackups, ...recentAuto.slice(0, 7)]
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || 0)
-    .slice(0, 30);
+/* ── 导出与导入 ── */
+
+/* 数据在服务器上，浏览器里不再留备份副本——那种副本会随着服务端更新
+   变成陈旧数据，比没有更危险。导出直接向服务端要一份完整快照。 */
+async function downloadServerBackup() {
   try {
-    localStorage.setItem(BACKUP_KEY, JSON.stringify(retained));
-  } catch (e) {
-    if (e.name === 'QuotaExceededError' || e instanceof DOMException) {
-      const fallback = [...manualBackups, ...recentAuto.slice(0, 1)]
-        .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || 0)
-        .slice(0, 10);
-      try {
-        localStorage.setItem(BACKUP_KEY, JSON.stringify(fallback));
-      } catch (_) {
-        alert(t('浏览器存储空间已满，备份数据无法保存。请导出重要数据后清理浏览器存储。'));
-      }
-    }
+    const data = await API.get("/api/export");
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `课题组管理台备份-${todayISO()}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    /* 只有真正导出成文件才算数，这条记录驱动首页的备份提醒。 */
+    state.settings.lastExportAt = todayISO();
+    await saveState();
+    render();
+  } catch (error) {
+    alert(`${t("导出失败")}：${error.message}`);
   }
 }
 
-function createDailyBackup() {
-  const todayKey = `auto-${todayISO()}`;
-  const backups = getBackups();
-  if (backups.some((backup) => backup.id === todayKey)) return;
-  createBackup("每日自动备份", false, todayKey);
+async function exportToDataBox() {
+  try {
+    const data = await API.get("/api/export");
+    $("#dataBox").value = JSON.stringify(data, null, 2);
+  } catch (error) {
+    alert(`${t("导出失败")}：${error.message}`);
+  }
 }
 
-function createBackup(reason = "手动备份", download = false, fixedId = "") {
-  const backup = {
-    id: fixedId || uid("backup"),
-    createdAt: new Date().toLocaleString(localeTag()),
-    reason,
-    data: JSON.parse(JSON.stringify(state)),
-  };
-  const backups = getBackups().filter((item) => item.id !== backup.id);
-  setBackups([backup, ...backups]);
-  state.settings.lastBackupAt = backup.createdAt;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  if (download) downloadBackup(backup);
-  return backup;
-}
-
-function downloadLatestBackup() {
-  const latest = getBackups()[0] || createBackup("下载前备份", true);
-  downloadBackup(latest);
-}
-
-function downloadBackup(backup) {
-  const blob = new Blob([JSON.stringify(backup.data, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `课题组管理台备份-${todayISO()}.json`;
-  link.click();
-  URL.revokeObjectURL(url);
-  /* 只有真正导出成文件才算数：浏览器内的备份会随着清缓存一起消失。 */
-  state.settings.lastExportAt = todayISO();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
-
-function loadBackupToDataBox(id) {
-  const backup = getBackups().find((item) => item.id === id);
-  if (!backup) return;
-  $("#dataBox").value = JSON.stringify(backup.data, null, 2);
-}
-
-function resetData() {
-  if (!confirm(t("恢复示例数据会覆盖当前浏览器里的记录。"))) return;
+async function resetData() {
+  if (!confirm(t("恢复示例数据会覆盖服务器上的全部记录，确定继续？"))) return;
+  const seeded = migrateState(seedData());
   Object.keys(state).forEach((key) => delete state[key]);
-  Object.assign(state, seedData());
-  saveState();
-  render();
+  Object.assign(state, seeded);
+  if (await saveState()) {
+    await loadStateFromServer();
+    render();
+  }
 }
 
 /* ── 关联文件 ──
@@ -3322,12 +4173,23 @@ function attachEvents() {
     if (navTarget) {
       currentView = navTarget.dataset.view;
       render();
+      /* 这几个视图的数据不在 state 里，进页面时按需拉一次。 */
+      if (currentView === "goals") loadGoalsData();
+      if (currentView === "contracts") loadContracts();
     }
   });
 
   $("#modalClose").addEventListener("click", closeModal);
   $("#modal").addEventListener("click", (event) => {
     if (event.target.id === "modal") closeModal();
+  });
+
+  document.body.addEventListener("change", (event) => {
+    if (event.target.id === "goalsStudentPicker") {
+      goalsStudentId = event.target.value;
+      goalsLoaded = false;
+      loadGoalsData(true);
+    }
   });
 
   document.body.addEventListener("input", (event) => {
@@ -3510,6 +4372,9 @@ function applyStaticTranslations() {
   document.querySelectorAll(".lang-switch button").forEach((button) => {
     button.classList.toggle("active", button.dataset.lang === getLang());
   });
+  /* 这个函数会用捕获的原始 HTML 重写侧栏，把角色可见性加的 hidden 冲掉，
+     所以每次都要重新收敛一次导航——否则学生切一次语言就看见全部菜单。 */
+  applyRoleVisibility();
 }
 
 function switchLanguage(lang) {
@@ -3519,11 +4384,146 @@ function switchLanguage(lang) {
   render();
 }
 
-/* ── 启动 ── */
+/* ── 登录与启动 ── */
 
-captureStaticOriginals();
-applyStaticTranslations();
-attachEvents();
-render();
-initIntroSplash();
-maybeNotify();
+function showAuthGate(mode = "login") {
+  const gate = $("#authGate");
+  if (!gate) return;
+  gate.classList.remove("hidden");
+  $("#loginForm").classList.toggle("hidden", mode !== "login");
+  $("#passwordForm").classList.toggle("hidden", mode !== "password");
+  const focus = mode === "login" ? $("#loginUser") : $("#pwOld");
+  window.setTimeout(() => focus?.focus(), 30);
+}
+
+function hideAuthGate() {
+  $("#authGate")?.classList.add("hidden");
+}
+
+function showAuthError(selector, message) {
+  const node = $(selector);
+  if (!node) return;
+  node.textContent = message;
+  node.classList.toggle("hidden", !message);
+}
+
+function renderIdentity() {
+  const box = $("#whoami");
+  if (!box) return;
+  if (!API.user) {
+    box.classList.add("hidden");
+    return;
+  }
+  box.classList.remove("hidden");
+  const role = API.isPI ? t("导师") : t("学生");
+  $("#whoamiName").textContent = `${API.user.display_name || API.user.username}（${role}）`;
+}
+
+/* 学生看不到横向、经费、账号这些模块。这只是界面收敛，
+   真正的门在服务端——前端把按钮改出来也拿不到数据。 */
+const PI_ONLY_VIEWS = new Set([
+  "industry", "leads", "funding", "archive", "crawler", "alumni", "settings",
+  "contracts",
+]);
+
+function applyRoleVisibility() {
+  document.querySelectorAll(".nav-item").forEach((button) => {
+    const view = button.dataset.view;
+    const hidden = !API.isPI && PI_ONLY_VIEWS.has(view);
+    button.classList.toggle("hidden", hidden);
+  });
+  if (!API.isPI && PI_ONLY_VIEWS.has(currentView)) currentView = "dashboard";
+}
+
+async function enterApp() {
+  await loadStateFromServer();
+  await loadTodos(true);
+  if (API.isPI) loadContracts(true);
+  loadGoalsData(true);
+  renderIdentity();
+  applyRoleVisibility();
+  hideAuthGate();
+  render();
+  maybeNotify();
+}
+
+function attachAuthEvents() {
+  $("#loginForm")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = event.currentTarget.querySelector("button[type=submit]");
+    button.disabled = true;
+    showAuthError("#loginError", "");
+    try {
+      await API.login($("#loginUser").value.trim(), $("#loginPass").value);
+      $("#loginPass").value = "";
+      if (API.mustChangePassword) {
+        showAuthGate("password");
+        return;
+      }
+      await enterApp();
+    } catch (error) {
+      showAuthError("#loginError", error.message);
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  $("#passwordForm")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    showAuthError("#pwError", "");
+    const next = $("#pwNew").value;
+    if (next !== $("#pwNew2").value) {
+      showAuthError("#pwError", t("两次输入的新口令不一致。"));
+      return;
+    }
+    const button = event.currentTarget.querySelector("button[type=submit]");
+    button.disabled = true;
+    try {
+      await API.changePassword($("#pwOld").value, next);
+      /* 服务端改完口令会把所有会话踢掉，包括当前这个，所以要重新登录。 */
+      $("#pwOld").value = $("#pwNew").value = $("#pwNew2").value = "";
+      showAuthGate("login");
+      showAuthError("#loginError", t("口令已更新，请用新口令登录。"));
+    } catch (error) {
+      showAuthError("#pwError", error.message);
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  $("#logoutBtn")?.addEventListener("click", async () => {
+    await API.logout();
+    location.reload();
+  });
+}
+
+API.onUnauthorized = () => {
+  renderIdentity();
+  showAuthGate("login");
+  showAuthError("#loginError", t("登录已过期，请重新登录。"));
+};
+
+async function bootstrap() {
+  captureStaticOriginals();
+  applyStaticTranslations();
+  attachEvents();
+  attachAuthEvents();
+  initIntroSplash();
+  try {
+    await API.me();
+    if (API.mustChangePassword) {
+      showAuthGate("password");
+      return;
+    }
+    await enterApp();
+  } catch (error) {
+    if (error.status === 503) {
+      showAuthGate("login");
+      showAuthError("#loginError", error.message);
+      return;
+    }
+    showAuthGate("login");
+  }
+}
+
+bootstrap();

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>课题组管理台</title>
-    <link rel="stylesheet" href="./styles.css?v=generic-v5" />
+    <link rel="stylesheet" href="./styles.css?v=generic-v8" />
   </head>
   <body>
     <div id="introSplash" class="intro-splash hidden" aria-live="polite" aria-label="课题组管理台开屏动画">
@@ -99,12 +99,14 @@
         <nav class="nav" aria-label="主导航">
           <button class="nav-item active" data-view="dashboard">总览</button>
           <button class="nav-item" data-view="students">在读学生</button>
+          <button class="nav-item" data-view="goals">目标与计划</button>
           <button class="nav-item" data-view="alumni">毕业学生</button>
           <button class="nav-item" data-view="topics">硕士课题</button>
           <button class="nav-item" data-view="discussion">研讨看板</button>
           <button class="nav-item" data-view="archive">档案扫描</button>
           <button class="nav-item" data-view="industry">横向课题</button>
           <button class="nav-item" data-view="leads">合作线索</button>
+          <button class="nav-item" data-view="contracts">合同管理</button>
           <button class="nav-item" data-view="crawler">AI 爬虫</button>
           <button class="nav-item" data-view="duties">课题组事务</button>
           <button class="nav-item" data-view="weekly">周进展</button>
@@ -118,7 +120,11 @@
             <button type="button" data-lang="en">EN</button>
           </div>
           <button id="notifyBtn" class="ghost-button" type="button">开启提醒</button>
-          <p>数据只保存在本机浏览器。</p>
+          <div id="whoami" class="whoami hidden">
+            <span id="whoamiName"></span>
+            <button id="logoutBtn" class="ghost-button" type="button">退出</button>
+          </div>
+          <p>数据保存在课题组服务器上。</p>
         </div>
       </aside>
 
@@ -126,6 +132,7 @@
         <header class="topbar">
           <div>
             <h1 id="viewTitle">总览</h1>
+            <span id="syncStatus" class="sync-status hidden" role="status"></span>
             <p id="viewSubtitle">学生进展、风险和事务负担的今日快照。</p>
           </div>
           <div class="top-actions">
@@ -136,6 +143,8 @@
 
         <section id="dashboardView" class="view active-view"></section>
         <section id="studentsView" class="view"></section>
+        <section id="goalsView" class="view"></section>
+        <section id="contractsView" class="view"></section>
         <section id="alumniView" class="view"></section>
         <section id="topicsView" class="view"></section>
         <section id="discussionView" class="view"></section>
@@ -161,6 +170,44 @@
       </div>
     </div>
 
+    <div id="authGate" class="auth-gate hidden" aria-live="polite">
+      <div class="auth-card">
+        <div class="auth-brand">
+          <span class="brand-mark" aria-hidden="true">
+            <svg class="cloud-icon" viewBox="0 0 24 24" focusable="false">
+              <path d="M7.2 18.2h9.1a4.2 4.2 0 0 0 .4-8.4 6.1 6.1 0 0 0-11.5 2.1A3.4 3.4 0 0 0 7.2 18.2Z" />
+              <path d="M8 15.7h8.8" />
+            </svg>
+          </span>
+          <strong>课题组管理台</strong>
+        </div>
+
+        <form id="loginForm" class="auth-form">
+          <h2>登录</h2>
+          <label for="loginUser">用户名</label>
+          <input id="loginUser" name="username" type="text" autocomplete="username" required />
+          <label for="loginPass">口令</label>
+          <input id="loginPass" name="password" type="password" autocomplete="current-password" required />
+          <p id="loginError" class="auth-error hidden" role="alert"></p>
+          <button class="primary-button" type="submit">登录</button>
+          <p class="auth-hint">账号由导师创建。忘记口令请联系导师重置。</p>
+        </form>
+
+        <form id="passwordForm" class="auth-form hidden">
+          <h2>请先设置新口令</h2>
+          <p class="auth-hint">这是导师给你的初始口令，第一次登录需要改掉。</p>
+          <label for="pwOld">当前口令</label>
+          <input id="pwOld" name="old_password" type="password" autocomplete="current-password" required />
+          <label for="pwNew">新口令</label>
+          <input id="pwNew" name="new_password" type="password" autocomplete="new-password" required />
+          <label for="pwNew2">再输一次</label>
+          <input id="pwNew2" name="confirm" type="password" autocomplete="new-password" required />
+          <p id="pwError" class="auth-error hidden" role="alert"></p>
+          <button class="primary-button" type="submit">保存并继续</button>
+        </form>
+      </div>
+    </div>
+
     <template id="emptyTemplate">
       <div class="empty-state">
         <strong>还没有记录</strong>
@@ -168,7 +215,8 @@
       </div>
     </template>
 
-    <script src="./i18n.js?v=generic-v5"></script>
-    <script src="./app.js?v=generic-v5" defer></script>
+    <script src="./i18n.js?v=generic-v8"></script>
+    <script src="./api.js?v=generic-v8"></script>
+    <script src="./app.js?v=generic-v8" defer></script>
   </body>
 </html>
