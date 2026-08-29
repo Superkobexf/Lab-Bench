@@ -252,6 +252,24 @@ function studentName(id) {
   return state.students.find((student) => student.id === id)?.name || "未分配";
 }
 
+/* studentName() 必须继续返回未转义原文：deleteWeekly / deleteWeeklyDraft 的
+   confirm() 文案和 filterDuty() 的 textContent 比较都依赖它。
+   凡是要拼进 HTML 的场合，一律走下面这个包装。 */
+function studentNameHTML(id) {
+  return escapeHTML(studentName(id));
+}
+
+/* 只放行 http/https。备份 JSON 里的 URL 是外部可控数据，
+   escapeHTML 能挡住属性闭合，挡不住 javascript: 这类伪协议。 */
+function safeURL(value = "") {
+  try {
+    const url = new URL(String(value), location.href);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
 function latestLog(studentId) {
   return state.weeklyLogs
     .filter((log) => log.studentId === studentId)
@@ -302,7 +320,7 @@ function optionStudents(selected = "", multiple = false) {
   return state.students
     .map((student) => {
       const isSelected = Array.isArray(selected) ? selected.includes(student.id) : selected === student.id;
-      return `<option value="${student.id}" ${isSelected ? "selected" : ""}>${escapeHTML(student.name)} · ${tv(student.grade)}</option>`;
+      return `<option value="${escapeHTML(student.id)}" ${isSelected ? "selected" : ""}>${escapeHTML(student.name)} · ${tv(student.grade)}</option>`;
     })
     .join("");
 }
@@ -364,7 +382,7 @@ function getIssues() {
       issues.push({
         level: topic.risk === "高" ? "high" : "medium",
         title: `${escapeHTML(studentName(topic.studentId))}的课题复盘已到期`,
-        body: `原定复盘日期为<span>${topic.nextReview}</span>，建议检查实验、文献库和数据分析是否同步推进。`,
+        body: `原定复盘日期为<span>${escapeHTML(topic.nextReview)}</span>，建议检查实验、文献库和数据分析是否同步推进。`,
       });
     }
   }
@@ -374,7 +392,7 @@ function getIssues() {
       issues.push({
         level: "medium",
         title: `${escapeHTML(project.name)} ${days > 0 ? "交付节点已过期" : "接近交付节点"}`,
-        body: `合作老师：${escapeHTML(project.expert)}。下一次跟进<span>${project.nextMilestone}</span>，请确认学生分工和后续具体项目。`,
+        body: `合作老师：${escapeHTML(project.expert)}。下一次跟进<span>${escapeHTML(project.nextMilestone)}</span>，请确认学生分工和后续具体项目。`,
       });
     }
   }
@@ -399,7 +417,7 @@ function getTodayTasks() {
       tasks.push({
         level: "medium",
         title: `${escapeHTML(student.name)} 需要补周进展`,
-        body: log ? `上次更新是<span>${log.weekOf}</span>。` : "还没有正式周进展。",
+        body: log ? `上次更新是<span>${escapeHTML(log.weekOf)}</span>。` : "还没有正式周进展。",
         view: "weekly",
       });
     }
@@ -408,7 +426,7 @@ function getTodayTasks() {
     tasks.push({
       level: topic.risk === "高" ? "high" : "medium",
       title: `${escapeHTML(studentName(topic.studentId))} 课题需要复盘`,
-      body: `${escapeHTML(topic.title)}，复盘日期<span>${topic.nextReview}</span>。`,
+      body: `${escapeHTML(topic.title)}，复盘日期<span>${escapeHTML(topic.nextReview)}</span>。`,
       view: "topics",
     });
   });
@@ -416,7 +434,7 @@ function getTodayTasks() {
     tasks.push({
       level: "medium",
       title: `${escapeHTML(lead.company)} 合作线索需要跟进`,
-      body: `${escapeHTML(lead.contact) || "联系人待补"}，下次跟进<span>${lead.nextFollowUp}</span>。`,
+      body: `${escapeHTML(lead.contact) || "联系人待补"}，下次跟进<span>${escapeHTML(lead.nextFollowUp)}</span>。`,
       view: "leads",
     });
   });
@@ -494,7 +512,7 @@ function renderTodayTask(task) {
         <strong>${tr(task.title)}</strong>
         <p>${tr(task.body)}</p>
       </div>
-      <button class="small-button" type="button" data-action="set-view" data-id="${task.view}">去处理</button>
+      <button class="small-button" type="button" data-action="set-view" data-id="${escapeHTML(task.view)}">去处理</button>
       <span class="tag ${tagClass}">${task.level === "high" ? "优先" : task.level === "medium" ? "提醒" : "信息"}</span>
     </article>
   `;
@@ -515,8 +533,8 @@ function renderStudentProgressRow(student) {
           <h3>${escapeHTML(student.name)} <span class="tag blue">${tv(student.grade)}</span></h3>
           <div class="meta">
             <span>${escapeHTML(student.status)}</span>
-            <span>${log ? `最近周报 ${log.weekOf}` : "暂无周报"}</span>
-            <span>${topic ? `复盘 ${topic.nextReview}` : "暂无课题"}</span>
+            <span>${log ? `最近周报 ${escapeHTML(log.weekOf)}` : "暂无周报"}</span>
+            <span>${topic ? `复盘 ${escapeHTML(topic.nextReview)}` : "暂无课题"}</span>
           </div>
         </div>
         <span class="tag ${stale ? "danger" : "ok"}">${stale ? "该看进展" : "已更新"}</span>
@@ -538,7 +556,7 @@ function renderDutyBalance() {
   });
   return `
     <div class="panel">
-      <div class="panel-head"><h2>劳务依据</h2><span class="tag violet">${state.settings.stipendRate} 元/积分</span></div>
+      <div class="panel-head"><h2>劳务依据</h2><span class="tag violet">${Number(state.settings.stipendRate) || 0} 元/积分</span></div>
       <table class="table"><thead><tr><th>学生</th><th>积分</th><th>建议金额</th></tr></thead><tbody>${rows.length ? rows.join("") : '<tr><td colspan="3" class="meta">暂无事务记录</td></tr>'}</tbody></table>
     </div>
   `;
@@ -552,7 +570,7 @@ function renderIndustrySummary() {
         ${state.industryProjects.length ? state.industryProjects.map((project) => `
           <div class="list-row">
             <strong>${escapeHTML(project.name)}</strong>
-            <div class="meta"><span>${escapeHTML(project.expert)}</span><span>${project.nextMilestone}</span><span>${listJoin((project.students || []).map(studentName))}</span></div>
+            <div class="meta"><span>${escapeHTML(project.expert)}</span><span>${escapeHTML(project.nextMilestone)}</span><span>${listJoin((project.students || []).map(studentNameHTML))}</span></div>
           </div>
         `).join("") : '<div class="empty-state"><strong>还没有横向合作</strong><p>在"横向课题"页面添加合作单位。</p></div>'}
       </div>
@@ -565,7 +583,7 @@ function renderReminderCard() {
   return `
     <div class="panel">
       <div class="panel-head"><h2>提醒规则</h2><span class="tag ok">本地</span></div>
-      <p class="meta">默认每<span>${dayNames[state.settings.weeklyReviewDay]}</span> <span>${state.settings.notifyHour}:00</span> 检查学生周进展。浏览器通知开启后，页面打开时会提示到期事项。</p>
+      <p class="meta">默认每<span>${dayNames[state.settings.weeklyReviewDay]}</span> <span>${Number(state.settings.notifyHour) || 0}:00</span> 检查学生周进展。浏览器通知开启后，页面打开时会提示到期事项。</p>
       <div style="height: 12px;"></div>
       <button class="primary-button" type="button" data-action="settings">调整规则</button>
     </div>
@@ -592,11 +610,11 @@ function renderStudentRow(student) {
       <div class="row-head">
         <div>
           <h3>${escapeHTML(student.name)} <span class="tag blue">${tv(student.grade)}</span></h3>
-          <div class="meta"><span>${escapeHTML(student.role)}</span><span>${escapeHTML(student.status)}</span><span>毕业 ${student.graduation}</span></div>
+          <div class="meta"><span>${escapeHTML(student.role)}</span><span>${escapeHTML(student.status)}</span><span>毕业 ${escapeHTML(student.graduation)}</span></div>
         </div>
         <div class="row-actions">
-          <button class="small-button" type="button" data-action="edit-student" data-id="${student.id}">编辑</button>
-          <button class="small-button danger-button" type="button" data-action="delete-student" data-id="${student.id}">删除</button>
+          <button class="small-button" type="button" data-action="edit-student" data-id="${escapeHTML(student.id)}">编辑</button>
+          <button class="small-button danger-button" type="button" data-action="delete-student" data-id="${escapeHTML(student.id)}">删除</button>
         </div>
       </div>
       <p>${escapeHTML(student.advisorFocus)}</p>
@@ -627,17 +645,17 @@ function renderTopics() {
 function renderTopicRow(topic) {
   const riskClass = topic.risk === "高" ? "danger" : topic.risk === "中" ? "warn" : "ok";
   return `
-    <article class="list-row searchable" data-risk="${topic.risk}">
+    <article class="list-row searchable" data-risk="${tv(topic.risk)}">
       <div class="row-head">
         <div>
           <h3>${escapeHTML(topic.title)}</h3>
-          <div class="meta"><span>${studentName(topic.studentId)}</span><span>${escapeHTML(topic.phase)}</span><span>复盘 ${topic.nextReview}</span></div>
+          <div class="meta"><span>${studentNameHTML(topic.studentId)}</span><span>${escapeHTML(topic.phase)}</span><span>复盘 ${escapeHTML(topic.nextReview)}</span></div>
         </div>
         <div class="row-actions">
-          <span class="tag ${riskClass}">${topic.risk}风险</span>
-          <button class="small-button" type="button" data-action="attach-file" data-id="topics:${topic.id}">关联文件</button>
-          <button class="small-button" type="button" data-action="edit-topic" data-id="${topic.id}">编辑</button>
-          <button class="small-button danger-button" type="button" data-action="delete-topic" data-id="${topic.id}">删除</button>
+          <span class="tag ${riskClass}">${tv(topic.risk)}风险</span>
+          <button class="small-button" type="button" data-action="attach-file" data-id="topics:${escapeHTML(topic.id)}">关联文件</button>
+          <button class="small-button" type="button" data-action="edit-topic" data-id="${escapeHTML(topic.id)}">编辑</button>
+          <button class="small-button danger-button" type="button" data-action="delete-topic" data-id="${escapeHTML(topic.id)}">删除</button>
         </div>
       </div>
       <div class="progress-track"><div class="progress-bar" style="width:${Number(topic.progress || 0)}%"></div></div>
@@ -739,7 +757,7 @@ function renderDiscussion() {
         ${graphs.length ? `
           <div class="graph-tabs">
             ${graphs.map((item) => `
-              <button class="small-button ${item.studentId === selectedGraphStudent ? "active-tab" : ""}" type="button" data-action="select-graph" data-id="${item.studentId}">
+              <button class="small-button ${item.studentId === selectedGraphStudent ? "active-tab" : ""}" type="button" data-action="select-graph" data-id="${escapeHTML(item.studentId)}">
                 ${escapeHTML(studentName(item.studentId))}
               </button>
             `).join("")}
@@ -868,7 +886,7 @@ function renderArchive() {
         <div class="issue-list">
           ${scans.length ? scans.map((scan) => `
             <div class="issue">
-              <strong>${studentName(scan.studentId)}</strong>
+              <strong>${studentNameHTML(scan.studentId)}</strong>
               <p>${escapeHTML(scan.check)}</p>
             </div>
           `).join("") : '<div class="empty-state"><strong>还没有扫描记录</strong><p>点击"扫描学生档案文件夹"开始。</p></div>'}
@@ -897,7 +915,7 @@ function renderUnmatchedFolders() {
             <div class="row-head">
               <div>
                 <h3>${escapeHTML(item.folder)}</h3>
-                <div class="meta"><span>${item.count} 个文件</span></div>
+                <div class="meta"><span>${Number(item.count) || 0} 个文件</span></div>
               </div>
               <div class="row-actions">
                 <button class="small-button" type="button" data-action="assign-folder" data-id="${escapeHTML(item.folder)}">指派给学生</button>
@@ -917,7 +935,7 @@ function renderArchiveRow(scan) {
     <article class="list-row searchable" data-text="${escapeHTML(text)}">
       <div class="row-head">
         <div>
-          <h3>${studentName(scan.studentId)} <span class="tag violet">${tv(scan.version)}</span></h3>
+          <h3>${studentNameHTML(scan.studentId)} <span class="tag violet">${tv(scan.version)}</span></h3>
           <div class="meta"><span>${escapeHTML(scan.folder)}</span></div>
         </div>
       </div>
@@ -950,17 +968,17 @@ function renderIndustryRow(project) {
       <div class="row-head">
         <div>
           <h3>${escapeHTML(project.name)}</h3>
-          <div class="meta"><span>合作老师：${escapeHTML(project.expert)}</span><span>${escapeHTML(project.expertContact)}</span><span>跟进 ${project.nextMilestone}</span></div>
+          <div class="meta"><span>合作老师：${escapeHTML(project.expert)}</span><span>${escapeHTML(project.expertContact)}</span><span>跟进 ${escapeHTML(project.nextMilestone)}</span></div>
         </div>
         <div class="row-actions">
           <span class="tag blue">${tv(project.status)}</span>
-          <button class="small-button" type="button" data-action="attach-file" data-id="industryProjects:${project.id}">关联文件</button>
-          <button class="small-button" type="button" data-action="edit-industry" data-id="${project.id}">编辑</button>
-          <button class="small-button danger-button" type="button" data-action="delete-industry" data-id="${project.id}">删除</button>
+          <button class="small-button" type="button" data-action="attach-file" data-id="industryProjects:${escapeHTML(project.id)}">关联文件</button>
+          <button class="small-button" type="button" data-action="edit-industry" data-id="${escapeHTML(project.id)}">编辑</button>
+          <button class="small-button danger-button" type="button" data-action="delete-industry" data-id="${escapeHTML(project.id)}">删除</button>
         </div>
       </div>
       <p><strong>后续具体项目</strong>：${escapeHTML(project.deliverable)}</p>
-      <p><strong>学生分工</strong>：${listJoin((project.students || []).map(studentName)) || "未分配"}</p>
+      <p><strong>学生分工</strong>：${listJoin((project.students || []).map(studentNameHTML)) || "未分配"}</p>
       ${renderAttachments("industryProjects", project)}
       <p class="meta">${escapeHTML(project.notes)}</p>
     </article>
@@ -1022,8 +1040,8 @@ function renderLeadRow(lead) {
         <div class="row-actions">
           <span class="tag ${due ? "warn" : "ok"}">${tv(lead.status)}</span>
           <span class="tag blue">${tv(lead.priority)}优先级</span>
-          <button class="small-button" type="button" data-action="edit-lead" data-id="${lead.id}">编辑</button>
-          <button class="small-button danger-button" type="button" data-action="delete-lead" data-id="${lead.id}">删除</button>
+          <button class="small-button" type="button" data-action="edit-lead" data-id="${escapeHTML(lead.id)}">编辑</button>
+          <button class="small-button danger-button" type="button" data-action="delete-lead" data-id="${escapeHTML(lead.id)}">删除</button>
         </div>
       </div>
       <div class="grid two-col">
@@ -1081,15 +1099,15 @@ function renderCrawlerTask(task) {
       <div class="row-head">
         <div>
           <h3>${escapeHTML(studentName(task.studentId))} <span class="tag blue">${tv(student?.grade || "")}</span></h3>
-          <div class="meta"><span>${escapeHTML(task.scope)}</span><span>上次抓取 ${task.lastRun || "未运行"}</span></div>
+          <div class="meta"><span>${escapeHTML(task.scope)}</span><span>上次抓取 ${escapeHTML(task.lastRun || "未运行")}</span></div>
         </div>
         <div class="row-actions">
-          <button class="small-button" type="button" data-action="run-crawler" data-id="${task.studentId}">抓取</button>
-          <button class="small-button" type="button" data-action="edit-crawler" data-id="${task.studentId}">关键词</button>
+          <button class="small-button" type="button" data-action="run-crawler" data-id="${escapeHTML(task.studentId)}">抓取</button>
+          <button class="small-button" type="button" data-action="edit-crawler" data-id="${escapeHTML(task.studentId)}">关键词</button>
         </div>
       </div>
       <p><strong>检索式</strong>：${escapeHTML(task.query)}</p>
-      <div class="issue-list" id="crawlerFindings-${task.studentId}">
+      <div class="issue-list" id="crawlerFindings-${escapeHTML(task.studentId)}">
         ${findings.length ? findings.map(renderPaperFinding).join("") : `<div class="empty-state"><strong>还没有本月论文</strong><p>点击"抓取"后会显示近<span>${PAPER_CRAWL_WINDOW_DAYS}</span>天结果。</p></div>`}
       </div>
     </article>
@@ -1111,7 +1129,7 @@ function renderPaperFinding(paper) {
         <span>${escapeHTML(paper.venue || "未知期刊")}</span>
         <span>${escapeHTML(paper.date || "")}</span>
         <button class="small-button" type="button" data-action="toggle-summary" data-id="${summaryId}">摘要</button>
-        ${paper.url ? `<a class="small-button paper-link" href="${escapeHTML(paper.url)}" target="_blank" rel="noreferrer">原文</a>` : ""}
+        ${safeURL(paper.url) ? `<a class="small-button paper-link" href="${escapeHTML(safeURL(paper.url))}" target="_blank" rel="noopener noreferrer">原文</a>` : ""}
       </div>
       ${paper.relevanceReason ? `<p class="paper-note">筛选理由：${escapeHTML(paper.relevanceReason)}</p>` : ""}
       <p id="${summaryId}" class="paper-summary" hidden>${escapeHTML(abstractText)}</p>
@@ -1132,13 +1150,13 @@ function renderDuties() {
   const rows = state.duties.map((duty) => `
     <tr>
       <td>${escapeHTML(duty.date)}</td>
-      <td>${studentName(duty.studentId)}</td>
+      <td>${studentNameHTML(duty.studentId)}</td>
       <td>${escapeHTML(duty.title)}<br><span class="meta">${escapeHTML(duty.note)}</span></td>
       <td>${escapeHTML(duty.category)}</td>
-      <td>${duty.hours}</td>
-      <td>${duty.points}</td>
+      <td>${Number(duty.hours) || 0}</td>
+      <td>${Number(duty.points) || 0}</td>
       <td>${tv(duty.status)}</td>
-      <td><button class="small-button" type="button" data-action="edit-duty" data-id="${duty.id}">编辑</button> <button class="small-button danger-button" type="button" data-action="delete-duty" data-id="${duty.id}">删除</button></td>
+      <td><button class="small-button" type="button" data-action="edit-duty" data-id="${escapeHTML(duty.id)}">编辑</button> <button class="small-button danger-button" type="button" data-action="delete-duty" data-id="${escapeHTML(duty.id)}">删除</button></td>
     </tr>
   `);
   $("#dutiesView").innerHTML = tr(`
@@ -1176,16 +1194,16 @@ function renderWeekly() {
 
 function renderWeeklyDraftRow(draft) {
   return `
-    <article class="list-row searchable" data-student="${draft.studentId}">
+    <article class="list-row searchable" data-student="${escapeHTML(draft.studentId)}">
       <div class="row-head">
         <div>
-          <h3>${studentName(draft.studentId)} · ${draft.weekOf} <span class="tag warn">候选稿</span></h3>
+          <h3>${studentNameHTML(draft.studentId)} · ${escapeHTML(draft.weekOf)} <span class="tag warn">候选稿</span></h3>
           <div class="meta"><span>${escapeHTML(draft.source || "自动生成")}</span><span>${escapeHTML(draft.status || "待审核")}</span></div>
         </div>
         <div class="row-actions">
-          <button class="small-button" type="button" data-action="approve-weekly-draft" data-id="${draft.id}">通过</button>
-          <button class="small-button" type="button" data-action="edit-weekly-draft" data-id="${draft.id}">编辑后通过</button>
-          <button class="small-button danger-button" type="button" data-action="delete-weekly-draft" data-id="${draft.id}">丢弃</button>
+          <button class="small-button" type="button" data-action="approve-weekly-draft" data-id="${escapeHTML(draft.id)}">通过</button>
+          <button class="small-button" type="button" data-action="edit-weekly-draft" data-id="${escapeHTML(draft.id)}">编辑后通过</button>
+          <button class="small-button danger-button" type="button" data-action="delete-weekly-draft" data-id="${escapeHTML(draft.id)}">丢弃</button>
         </div>
       </div>
       <p>${escapeHTML(draft.summary || "")}</p>
@@ -1202,14 +1220,14 @@ function renderWeeklyDraftRow(draft) {
 function renderWeeklyRow(log) {
   const scoreClass = Number(log.outputScore) >= 4 ? "ok" : Number(log.outputScore) <= 2 ? "danger" : "warn";
   return `
-    <article class="list-row searchable" data-student="${log.studentId}">
+    <article class="list-row searchable" data-student="${escapeHTML(log.studentId)}">
       <div class="row-head">
         <div>
-          <h3>${studentName(log.studentId)} · ${log.weekOf}</h3>
-          <div class="meta"><span class="tag ${scoreClass}">产出 ${log.outputScore}/5</span><span>${daysBetween(log.weekOf)} 天前</span></div>
+          <h3>${studentNameHTML(log.studentId)} · ${escapeHTML(log.weekOf)}</h3>
+          <div class="meta"><span class="tag ${scoreClass}">产出 ${Number(log.outputScore) || 0}/5</span><span>${daysBetween(log.weekOf)} 天前</span></div>
         </div>
-        <button class="small-button" type="button" data-action="edit-weekly" data-id="${log.id}">编辑</button>
-        <button class="small-button danger-button" type="button" data-action="delete-weekly" data-id="${log.id}">删除</button>
+        <button class="small-button" type="button" data-action="edit-weekly" data-id="${escapeHTML(log.id)}">编辑</button>
+        <button class="small-button danger-button" type="button" data-action="delete-weekly" data-id="${escapeHTML(log.id)}">删除</button>
       </div>
       <div class="grid three-col">
         <p><strong>实验</strong><br>${escapeHTML(log.experiment)}</p>
@@ -1307,8 +1325,8 @@ function renderAlumniRow(item) {
         </div>
         <div class="row-actions">
           <span class="tag ${reachable ? "ok" : "warn"}">${reachable ? "可联系" : "待补联系方式"}</span>
-          <button class="small-button" type="button" data-action="edit-alumni" data-id="${item.id}">编辑</button>
-          <button class="small-button danger-button" type="button" data-action="delete-alumni" data-id="${item.id}">删除</button>
+          <button class="small-button" type="button" data-action="edit-alumni" data-id="${escapeHTML(item.id)}">编辑</button>
+          <button class="small-button danger-button" type="button" data-action="delete-alumni" data-id="${escapeHTML(item.id)}">删除</button>
         </div>
       </div>
       <div class="grid three-col">
@@ -1433,7 +1451,7 @@ function renderAchievementStudentCard(student) {
   const latest = items[0];
   const cardClass = publishedSci ? "has-sci" : active ? "moving" : "empty";
   return `
-    <article class="achievement-card searchable" data-status="${publishedSci ? "已发表" : latest?.status || "暂无"}" data-text="${escapeHTML(`${student.name} ${student.grade} ${items.map((item) => `${item.title} ${item.journal} ${item.status}`).join(" ")}`)}">
+    <article class="achievement-card searchable" data-status="${tv(publishedSci ? "已发表" : latest?.status || "暂无")}" data-text="${escapeHTML(`${student.name} ${student.grade} ${items.map((item) => `${item.title} ${item.journal} ${item.status}`).join(" ")}`)}">
       <div class="achievement-card-head">
         <div>
           <h3>${escapeHTML(student.name)}</h3>
@@ -1485,9 +1503,9 @@ function renderAchievementRow(item) {
         </div>
         <div class="row-actions">
           <span class="tag ${statusClass(item.status)}">${tv(item.status)}</span>
-          <button class="small-button" type="button" data-action="attach-file" data-id="achievements:${item.id}">关联文件</button>
-          <button class="small-button" type="button" data-action="edit-achievement" data-id="${item.id}">编辑</button>
-          <button class="small-button danger-button" type="button" data-action="delete-achievement" data-id="${item.id}">删除</button>
+          <button class="small-button" type="button" data-action="attach-file" data-id="achievements:${escapeHTML(item.id)}">关联文件</button>
+          <button class="small-button" type="button" data-action="edit-achievement" data-id="${escapeHTML(item.id)}">编辑</button>
+          <button class="small-button danger-button" type="button" data-action="delete-achievement" data-id="${escapeHTML(item.id)}">删除</button>
         </div>
       </div>
       <div class="grid three-col">
@@ -1673,9 +1691,9 @@ function renderFinanceRecordRow(record) {
         <div class="row-actions">
           <span class="tag ${fundingCategoryClass(record.category)}">${fundingCategoryLabel(record.category)}</span>
           <span class="tag ok">${money(record.amount)} 元</span>
-          <button class="small-button" type="button" data-action="attach-file" data-id="financeRecords:${record.id}">关联文件</button>
-          <button class="small-button" type="button" data-action="edit-finance" data-id="${record.id}">编辑</button>
-          <button class="small-button danger-button" type="button" data-action="delete-finance" data-id="${record.id}">删除</button>
+          <button class="small-button" type="button" data-action="attach-file" data-id="financeRecords:${escapeHTML(record.id)}">关联文件</button>
+          <button class="small-button" type="button" data-action="edit-finance" data-id="${escapeHTML(record.id)}">编辑</button>
+          <button class="small-button danger-button" type="button" data-action="delete-finance" data-id="${escapeHTML(record.id)}">删除</button>
         </div>
       </div>
       <div class="grid three-col">
@@ -1744,7 +1762,7 @@ function renderSettings() {
             <div class="backup-row">
               <span>${escapeHTML(backup.createdAt)}</span>
               <span>${escapeHTML(backup.reason)}</span>
-              <button class="small-button" type="button" data-action="load-backup" data-id="${backup.id}">查看</button>
+              <button class="small-button" type="button" data-action="load-backup" data-id="${escapeHTML(backup.id)}">查看</button>
             </div>
           `).join("") : '<p class="meta">还没有备份。保存数据时会每天自动留一份，也可以手动生成。</p>'}
         </div>
@@ -1791,7 +1809,7 @@ function studentCheckboxes(selected = []) {
       <div class="meta">
         ${state.students.map((student) => `
           <label class="tag">
-            <input type="checkbox" name="studentIds" value="${student.id}" ${selected.includes(student.id) ? "checked" : ""} />
+            <input type="checkbox" name="studentIds" value="${escapeHTML(student.id)}" ${selected.includes(student.id) ? "checked" : ""} />
             ${escapeHTML(student.name)}
           </label>
         `).join("")}
@@ -1807,7 +1825,7 @@ function resumeCheckboxes(selected = []) {
       <div class="meta">
         ${state.students.map((student) => `
           <label class="tag">
-            <input type="checkbox" name="studentIds" value="${student.id}" ${selected.includes(student.id) ? "checked" : ""} />
+            <input type="checkbox" name="studentIds" value="${escapeHTML(student.id)}" ${selected.includes(student.id) ? "checked" : ""} />
             ${escapeHTML(student.name)}
           </label>
         `).join("")}
@@ -2457,7 +2475,7 @@ function renderAttachments(collection, record) {
         <span class="attachment-chip" title="${escapeHTML(`${file.name} · ${formatFileSize(file.size)} · ${file.parser || "文件名"}`)}">
           <strong>${escapeHTML(file.name)}</strong>
           <span>${formatFileSize(file.size)}</span>
-          <button type="button" data-action="remove-attachment" data-id="${collection}:${record.id}:${file.id}" aria-label="移除关联">×</button>
+          <button type="button" data-action="remove-attachment" data-id="${collection}:${escapeHTML(record.id)}:${escapeHTML(file.id)}" aria-label="移除关联">×</button>
         </span>`
         )
         .join("")}
