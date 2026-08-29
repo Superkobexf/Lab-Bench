@@ -65,11 +65,12 @@ async def lifespan(_app):
 
 app = FastAPI(title="Lab Bench", lifespan=lifespan, docs_url=None, redoc_url=None)
 
-from routes import contracts, studentwork, todos  # noqa: E402  (放在 app 之后避免循环导入)
+from routes import contracts, studentwork, todos, trash  # noqa: E402  (放在 app 之后避免循环导入)
 
 app.include_router(studentwork.router)
 app.include_router(contracts.router)
 app.include_router(todos.router)
+app.include_router(trash.router)
 
 
 @app.middleware("http")

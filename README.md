@@ -159,7 +159,7 @@ Because this stores personal information about current students and alumni, hand
 **端口被占用？** 修改 `start-lab.command` 里的端口号。
 **Port already in use?** Change the port in `start-lab.command`.
 
-**多人怎么用？** 部署到一台服务器上，导师用管理员账号，学生账号由导师在「数据」页创建并绑定到学生档案。学生首次登录会被强制改掉初始口令。按 10 人以内的并发设计。
+**多人怎么用？** 部署到一台服务器上，导师用管理员账号，学生账号由导师在「数据」页的「账号管理」里创建并绑定到学生档案，忘记口令也在那里重置。学生首次登录会被强制改掉初始口令。按 10 人以内的并发设计。
 **How do several people use it?** Deploy it on one server. The supervisor holds the admin account and creates student accounts, each bound to a student record. Students must change their temporary password on first sign-in. Sized for up to about ten concurrent users.
 
 **学生能看到什么？** 只有自己的档案、课题、周进展、目标和计划，以及导师给自己的批注。横向课题、经费、合同、其他同学的数据一概看不到——这是服务端拦的。

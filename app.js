@@ -2648,7 +2648,261 @@ function renderSettings() {
         </form>
       </div>
     </div>
+    <div style="margin-top: 14px;">${renderAccountsPanel()}</div>
+    <div style="margin-top: 14px;">${renderTrashPanel()}</div>
   `);
+}
+
+/* ── 账号管理与回收站 ── */
+
+let usersCache = [];
+let trashCache = [];
+let adminLoaded = false;
+
+async function loadAdminData(force = false) {
+  if (!API.isPI) return;
+  if (adminLoaded && !force) return;
+  try {
+    const [u, t] = await Promise.all([API.listUsers(), API.listTrash()]);
+    usersCache = u.users || [];
+    trashCache = t.items || [];
+    adminLoaded = true;
+  } catch (error) {
+    setSyncStatus("error", error.message);
+  }
+  renderSettings();
+}
+
+/* 学生档案里已经有账号的，不再出现在"新建账号"的下拉里 */
+function unboundStudents() {
+  const bound = new Set(usersCache.map((user) => user.student_id).filter(Boolean));
+  return state.students.filter((student) => !bound.has(student.id));
+}
+
+function renderAccountsPanel() {
+  if (!API.isPI) return "";
+  return `
+    <div class="panel">
+      <div class="panel-head">
+        <h2>账号管理</h2>
+        <span class="tag blue">${usersCache.length} 个账号</span>
+      </div>
+      <p class="meta">学生账号由你创建并绑定到学生档案。新建和重置口令时设的都是一次性口令，学生首次登录会被强制改掉。</p>
+      <div class="settings-actions" style="margin: 12px 0;">
+        <button class="primary-button" type="button" data-action="add-user">新建账号</button>
+      </div>
+      <table class="table">
+        <thead><tr><th>用户名</th><th>显示名</th><th>角色</th><th>绑定学生</th><th>状态</th><th></th></tr></thead>
+        <tbody>
+          ${usersCache.map(renderUserRow).join("") ||
+            '<tr><td colspan="6" class="meta" style="text-align:center">还没有账号</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderUserRow(user) {
+  const isSelf = API.user && user.id === API.user.id;
+  return `
+    <tr>
+      <td>${escapeHTML(user.username)}${isSelf ? ' <span class="tag ok">你</span>' : ""}</td>
+      <td>${escapeHTML(user.display_name)}</td>
+      <td><span class="tag ${user.role === "pi" ? "blue" : "violet"}">${user.role === "pi" ? "导师" : "学生"}</span></td>
+      <td>${user.student_id ? studentNameHTML(user.student_id) : "—"}</td>
+      <td><span class="tag ${user.active ? "ok" : "danger"}">${user.active ? "启用" : "停用"}</span></td>
+      <td>
+        <button class="small-button" type="button" data-action="reset-user-password" data-id="${escapeHTML(String(user.id))}">重置口令</button>
+        <button class="small-button" type="button" data-action="edit-user" data-id="${escapeHTML(String(user.id))}">编辑</button>
+        ${isSelf ? "" : `<button class="small-button ${user.active ? "danger-button" : ""}" type="button" data-action="toggle-user" data-id="${escapeHTML(String(user.id))}">${user.active ? "停用" : "启用"}</button>`}
+      </td>
+    </tr>
+  `;
+}
+
+function userForm() {
+  const candidates = unboundStudents();
+  if (!candidates.length) {
+    alert(t("所有学生档案都已经绑定了账号。请先在「在读学生」页面添加学生。"));
+    return;
+  }
+  openModal(
+    "新建账号",
+    [
+      field("username", "用户名", "text", "", "只能用字母、数字和 . _ -"),
+      field("display_name", "显示名", "text", ""),
+      field("student_id", "绑定学生档案", "select", "", "",
+        candidates.map((student) => [student.id, `${student.name} · ${student.grade}`])),
+      field("password", "初始口令", "text", "", "至少 10 位，学生首次登录会被要求改掉"),
+    ].join(""),
+    async (values) => {
+      try {
+        const created = await API.createUser({
+          username: values.username,
+          display_name: values.display_name || values.username,
+          role: "student",
+          student_id: values.student_id,
+          password: values.password,
+        });
+        await loadAdminData(true);
+        alert(t(`账号已创建。请把用户名 ${created.user.username} 和初始口令告诉学生，他首次登录时必须改掉。`));
+      } catch (error) {
+        alert(error.message);
+        throw error;
+      }
+    },
+    { skipStateSave: true },
+  );
+}
+
+function editUserForm(userId) {
+  const user = usersCache.find((item) => String(item.id) === String(userId));
+  if (!user) return;
+  const options = [["", "不绑定"]].concat(
+    state.students.map((student) => [student.id, `${student.name} · ${student.grade}`]),
+  );
+  openModal(
+    "编辑账号",
+    [
+      field("display_name", "显示名", "text", user.display_name || ""),
+      user.role === "student"
+        ? field("student_id", "绑定学生档案", "select", user.student_id || "", "", options)
+        : "",
+    ].join(""),
+    async (values) => {
+      const body = { display_name: values.display_name };
+      if (user.role === "student") body.student_id = values.student_id || null;
+      try {
+        await API.updateUser(user.id, body);
+        await loadAdminData(true);
+      } catch (error) {
+        alert(error.message);
+        throw error;
+      }
+    },
+    { skipStateSave: true },
+  );
+}
+
+function resetUserPasswordForm(userId) {
+  const user = usersCache.find((item) => String(item.id) === String(userId));
+  if (!user) return;
+  openModal(
+    `重置 ${user.username} 的口令`,
+    [
+      `<p class="meta full">设一个一次性口令交给对方，他下次登录会被要求改掉。该账号当前所有登录会话都会立即失效。</p>`,
+      field("new_password", "新口令", "text", "", "至少 10 位，含大小写/数字/符号中的两类"),
+    ].join(""),
+    async (values) => {
+      try {
+        await API.updateUser(user.id, { new_password: values.new_password });
+        await loadAdminData(true);
+        alert(t(`已重置。请把新口令告诉 ${user.display_name || user.username}，他登录后需要立即修改。`));
+      } catch (error) {
+        alert(error.message);
+        throw error;
+      }
+    },
+    { skipStateSave: true },
+  );
+}
+
+async function toggleUserActive(userId) {
+  const user = usersCache.find((item) => String(item.id) === String(userId));
+  if (!user) return;
+  const next = !user.active;
+  if (!confirm(t(`${next ? "启用" : "停用"}账号 ${user.username}？${next ? "" : "停用后该账号会立即被踢下线。"}`))) return;
+  try {
+    await API.updateUser(user.id, { active: next });
+    await loadAdminData(true);
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+/* ── 回收站 ── */
+
+function renderTrashPanel() {
+  if (!API.isPI) return "";
+  return `
+    <div class="panel">
+      <div class="panel-head">
+        <h2>回收站</h2>
+        <span class="tag ${trashCache.length ? "warn" : "ok"}">${trashCache.length} 条</span>
+      </div>
+      <p class="meta">删掉的东西都留在这里，可以恢复。恢复学生档案时，会连带把跟着一起删掉的课题、周进展和事务一并捞回来。</p>
+      ${trashCache.length ? `
+        <table class="table">
+          <thead><tr><th>类型</th><th>内容</th><th>所属学生</th><th>删除时间</th><th></th></tr></thead>
+          <tbody>${trashCache.map(renderTrashRow).join("")}</tbody>
+        </table>
+      ` : '<div class="empty-state"><strong>回收站是空的</strong><p>删除过的记录会出现在这里。</p></div>'}
+    </div>
+  `;
+}
+
+function renderTrashRow(item) {
+  const key = `${item.kind}:${item.sub}:${item.id}`;
+  return `
+    <tr>
+      <td><span class="tag violet">${tv(item.kind_label)}</span></td>
+      <td>${escapeHTML(item.label)}</td>
+      <td>${item.student_name ? escapeHTML(item.student_name) : "—"}</td>
+      <td class="meta">${escapeHTML(formatDeletedAt(item.deleted_at))}</td>
+      <td>
+        <button class="small-button" type="button" data-action="restore-trash" data-id="${escapeHTML(key)}">恢复</button>
+        <button class="small-button danger-button" type="button" data-action="purge-trash" data-id="${escapeHTML(key)}">彻底删除</button>
+      </td>
+    </tr>
+  `;
+}
+
+/* 服务端存的是 UTC ISO，显示成本地时间 */
+function formatDeletedAt(value) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString(localeTag());
+}
+
+function parseTrashKey(key) {
+  const [kind, sub, ...rest] = String(key).split(":");
+  return { kind, sub, id: rest.join(":") };
+}
+
+function trashBody({ kind, sub, id }) {
+  return kind === "record" ? { kind, collection: sub, id } : { kind, id };
+}
+
+async function restoreTrashItem(key) {
+  const parsed = parseTrashKey(key);
+  try {
+    const result = await API.restoreTrash(trashBody(parsed));
+    await Promise.all([loadStateFromServer(), loadAdminData(true), loadTodos(true)]);
+    goalsLoaded = false;
+    contractsLoaded = false;
+    render();
+    if (result.restored_related) {
+      alert(t(`已恢复，并连带找回 ${result.restored_related} 条相关记录。`));
+    }
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+async function purgeTrashItem(key) {
+  const parsed = parseTrashKey(key);
+  const item = trashCache.find(
+    (entry) => entry.kind === parsed.kind && entry.id === parsed.id,
+  );
+  if (!confirm(t(`彻底删除「${item ? item.label : parsed.id}」？此操作不可恢复。`))) return;
+  try {
+    await API.purgeTrash(trashBody(parsed));
+    await loadAdminData(true);
+    render();
+  } catch (error) {
+    alert(error.message);
+  }
 }
 
 /* ── 通用 UI 工具 ── */
@@ -3018,6 +3272,12 @@ function handleAction(action, id) {
   if (action === "dismiss-item") setContractItem(id, { dismissed: true });
   if (action === "edit-item") contractItemForm(id);
   if (action === "add-todo") todoForm();
+  if (action === "add-user") userForm();
+  if (action === "edit-user") editUserForm(id);
+  if (action === "reset-user-password") resetUserPasswordForm(id);
+  if (action === "toggle-user") toggleUserActive(id);
+  if (action === "restore-trash") restoreTrashItem(id);
+  if (action === "purge-trash") purgeTrashItem(id);
   if (action === "toggle-todo") toggleTodo(id);
   if (action === "delete-todo") removeTodo(id);
   if (action === "settings") {
@@ -4176,6 +4436,7 @@ function attachEvents() {
       /* 这几个视图的数据不在 state 里，进页面时按需拉一次。 */
       if (currentView === "goals") loadGoalsData();
       if (currentView === "contracts") loadContracts();
+      if (currentView === "settings") loadAdminData();
     }
   });
 

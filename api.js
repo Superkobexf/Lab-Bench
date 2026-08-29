@@ -242,6 +242,18 @@ const API = {
     return this.patch(`/api/contracts/items/${encodeURIComponent(itemId)}`, body);
   },
 
+  /* ── 回收站 ── */
+
+  listTrash() {
+    return this.get("/api/trash");
+  },
+  restoreTrash(body) {
+    return this.post("/api/trash/restore", body);
+  },
+  purgeTrash(body) {
+    return this.post("/api/trash/purge", body);
+  },
+
   /* ── 待办与倒数日 ── */
 
   listTodos(includeDone = false) {
