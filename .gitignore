@@ -3,3 +3,12 @@
 Thumbs.db
 desktop.ini
 *.log
+
+# 后端运行时产物
+server/lab.db
+server/lab.db-wal
+server/lab.db-shm
+server/uploads/
+__pycache__/
+*.pyc
+.venv/

@@ -1,0 +1,27 @@
+# Web 层
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.34,<1.0
+pydantic>=2.9,<3.0
+python-multipart>=0.0.20      # 合同文件上传
+
+# 口令哈希。装不上时 auth.py 会降级到 pbkdf2-sha256，
+# 但公网部署请务必装上。
+argon2-cffi>=23.1
+
+# ── 合同解析 ────────────────────────────────────────────────
+# 数字版合同（Word 导出、电子签生成的 PDF）走文本层提取，
+# 零依赖，下面这些都不需要。以下只为扫描件和拍照件的 OCR。
+
+pillow>=10.0                  # 图像读取
+numpy>=1.24                   # OCR 引擎的输入格式
+pymupdf>=1.24                 # 扫描版 PDF 逐页渲染成图片
+
+# 默认 OCR 引擎。跑的是和 PaddleOCR 相同的 PP-OCR 模型，
+# 但推理走 onnxruntime，内存占用小得多，适合 2C2G。
+rapidocr-onnxruntime>=1.3
+
+# 更大的机器可以改用 PaddleOCR（取消下面两行注释，
+# 并设 LAB_BENCH_OCR_ENGINE=paddleocr）。
+# 它比 RapidOCR 重很多，2C2G 装不下。
+# paddleocr>=2.9
+# paddlepaddle>=2.6
