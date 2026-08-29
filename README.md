@@ -4,9 +4,9 @@
 
 A local-first management tool for university research group leaders. Keeps track of graduate students, their projects, industry contracts, group duties, weekly progress, outputs and spending.
 
-**零安装、零依赖、零服务器。** 几个静态文件，双击就能用。数据只存在你自己电脑的浏览器里，不上传任何服务器。
+**自己部署，自己掌握数据。** 一台服务器 + 一个 sqlite 文件，学生和导师各自有账号，数据只在你自己的服务器上。也可以只在本机跑，一条命令启动。
 
-**No install, no dependencies, no server.** A handful of static files — double-click and it runs. Your data stays in your own browser and is never uploaded anywhere.
+**Self-hosted, your data stays yours.** One server and one sqlite file. Supervisor and students each get an account, and the data lives only on the machine you control. It also runs locally with a single command.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
@@ -40,15 +40,17 @@ Commercial research management systems are either too heavy (built for a whole d
 
 Download or clone this repository, then either:
 
-- **方式一（推荐）**：双击 `start-lab.command`，浏览器打开 `http://localhost:5299`。
-  **Option 1 (recommended)**: double-click `start-lab.command` and open `http://localhost:5299`.
-- **方式二**：直接双击 `index.html`。
-  **Option 2**: open `index.html` directly.
+- **本机试用**：双击 `start-lab.command`。首次运行会自动装依赖、让你建一个导师账号，然后打开 `http://localhost:5299`。
+  **Try it locally**: double-click `start-lab.command`. On first run it installs dependencies, asks you to create a supervisor account, then serves `http://localhost:5299`.
+- **多人使用**：部署到你自己的服务器，见 [deploy/README.md](deploy/README.md)。
+  **For a whole group**: deploy it on your own server — see [deploy/README.md](deploy/README.md).
 
-手动启动命令 · Or start it manually:
+需要 Python 3.9 以上。手动启动 · Requires Python 3.9+. Manual start:
 
 ```bash
-python3 -m http.server 5299 --bind 127.0.0.1
+python3 -m venv .venv && ./.venv/bin/pip install -r server/requirements.txt
+./.venv/bin/python server/manage.py createadmin
+cd server && ../.venv/bin/python -m uvicorn app:app --port 5299
 ```
 
 系统自带一套示例数据（一个示例学生、课题、周进展、成果和费用记录），方便你先摸清每个模块怎么用，之后可以在"数据"页一键恢复或直接删掉示例内容。
@@ -65,6 +67,8 @@ It ships with a small set of sample data (one student, one project, a weekly log
 | --- | --- | --- |
 | **总览** Overview | 学生进展、过期周报、风险提示、事务积分和导师今日待办 | Student progress, overdue logs, risk alerts, duty points and your queue for today |
 | **在读学生** Students | 年级、预计毕业、状态、联系方式和导师关注点 | Year, expected graduation, status, contact details and what you're watching |
+| **目标与计划** Goals & Plans | 学生自己维护长短期目标和每周工作计划，导师逐条批注，学生可回复 | Students keep their own long- and short-term goals and weekly plans; you annotate them and they can reply |
+| **合同管理** Contracts | 横向合同多版本存档，自动抽取关键日期和金额，确认后生成倒数日提醒 | Versioned industry contracts with key dates and amounts extracted automatically; confirm one and it becomes a countdown reminder |
 | **毕业学生** Alumni | 毕业去向、现任职位、联系方式——课题组自己的校友网络 | Where graduates went, current roles, contacts — your group's own alumni network |
 | **硕士课题** Projects | 整体规划、实验进展、文献库、数据分析、进度和风险 | Plan, experiments, literature, data analysis, progress and risk |
 | **研讨看板** Discussion | 按课题关键词生成知识图谱，机制图讨论区 | Keyword graph generated from each project, plus a space for mechanism diagrams |
@@ -76,7 +80,7 @@ It ships with a small set of sample data (one student, one project, a weekly log
 | **周进展** Weekly Logs | 每周记录实验、数据、文献、卡点、下周计划和导师反馈 | Experiments, data, literature, blockers, next-week plan and your feedback |
 | **成果展板** Output Board | SCI、投稿、论文草稿的公开统计，形成正向压力 | Papers, submissions and drafts per student, shown openly |
 | **经费投入** Spending | 耗材、检测、版面费、补助，以及每 IF 投入的产出比 | Reagents, instrument time, publication fees, stipends and cost per unit of output |
-| **数据** Data | 导入导出 JSON 备份、规则设置、浏览器内历史备份 | JSON export/import, settings and in-browser backup history |
+| **数据** Data | 导入导出 JSON 备份、账号管理、规则设置 | JSON export/import, account management and settings |
 
 ## 界面预览 · A look at it
 
@@ -116,30 +120,53 @@ PDF extraction is written from scratch with no dependencies (inflating FlateDeco
 
 **Linked files store the filename and a text excerpt, not the file itself.** Browser storage is small; keeping binaries would fill it fast and make the exported backup unusable. So don't delete or move the originals.
 
-**备份提醒是刻意做得显眼的。** 数据存在 localStorage 里，清一次浏览器缓存就全没了。系统里的"每日自动备份"同样存在浏览器里，救不了这种情况——**只有导出成 JSON 文件才是真备份**。超过 14 天没导出，首页会出现提醒。
+**备份要自己安排。** 数据在服务器的 sqlite 文件里，`deploy/backup.sh` 可以挂 cron 每天备份，但**默认只备份到同一台机器上**——机器挂了就一起没了。建议同步一份到 OSS，或者定期从「数据」页导出 JSON 存到自己电脑。超过 14 天没导出，首页会提醒。
 
-**The backup warning is deliberately loud.** Data lives in localStorage, and clearing your browser wipes it. The daily automatic backup lives in the same place, so it won't save you — **only exporting a JSON file is a real backup**. If you haven't exported in 14 days, the front page says so.
+**Backups are on you.** The data is a sqlite file on the server. `deploy/backup.sh` can run daily from cron, but **it writes to the same machine by default** — if that machine dies, so does the backup. Sync a copy to object storage, or export a JSON from the Data page onto your own computer now and then. If you haven't exported in 14 days, the front page says so.
+
+**学生账号是真鉴权，不是界面开关。** 口令用 argon2id 存（装不上时退到 pbkdf2-600k），会话 token 在库里只存哈希，连错 8 次锁 15 分钟，改口令会踢掉全部旧会话。学生能看什么、能改什么，全部在服务端判定——前端把按钮改出来也拿不到别人的数据。
+
+**Student accounts are real authentication, not a UI toggle.** Passwords are hashed with argon2id (falling back to pbkdf2-600k), session tokens are stored only as hashes, eight failed attempts lock the account for fifteen minutes, and changing a password invalidates every existing session. What a student may read or write is decided server-side — editing the front-end buttons gets them nothing.
+
+**合同抽取的结果一律要人确认。** OCR 和正则都会误读，所以抽出来的日期和金额先进"待确认"区，你点过之后才变成待办并开始倒数。抽取只认"日期 + 交付/验收/付款/截止"这类组合，签署日期和身份证有效期不会被塞进你的日程。
+
+**Everything extracted from a contract needs your confirmation.** OCR and pattern matching both misread things, so extracted dates and amounts land in a pending list; only once you confirm one does it become a task and start counting down. Extraction only accepts a date paired with words like delivery, acceptance, payment or deadline — signature dates and ID expiry dates never end up in your schedule.
+
+**数字版合同不需要 OCR。** 服务端会先读 PDF 的文本层和 docx 正文，Word 导出和电子签平台生成的合同直接就能抽。只有扫描件和拍照件才走 OCR；服务器没装 OCR 引擎时会明确告诉你"这是扫描件，请手动填写"，而不是假装没找到日期。
+
+**Digital contracts need no OCR at all.** The server reads the PDF text layer and docx body first, so anything exported from Word or produced by an e-signature platform parses directly. OCR is only for scans and photos — and when no OCR engine is installed the app says so plainly rather than pretending it found no dates.
 
 ## 数据与隐私 · Data and privacy
 
-所有数据保存在当前浏览器的 localStorage 中，不经过任何服务器。唯一的联网行为是"AI 爬虫"模块调用公开论文索引 API（OpenAlex、Crossref、Europe PMC），不需要注册账号，也不会上传你的任何数据。
+数据保存在**你自己部署的那台服务器**上，不经过任何第三方。存的内容包括：学生和校友的姓名、年级、联系方式（含微信、邮箱）、课题与周进展、经费记录，以及你上传的横向合同原件和从中抽取的日期与金额。学生账号只能看到自己的那部分，这个限制在服务端强制，不是前端藏按钮。
 
-Everything is stored in your browser's localStorage and never touches a server. The only network activity is the Paper Radar module calling public paper indexes (OpenAlex, Crossref, Europe PMC). No account is needed and none of your data is sent anywhere.
+唯一的对外联网是"AI 爬虫"模块调用公开论文索引 API（OpenAlex、Crossref、Europe PMC），不需要注册账号，也不会上传你的数据。扫描件 OCR 在**你自己的服务器上**跑，合同不会发给任何云服务。
 
-**换浏览器或换电脑前，务必在"数据"页导出 JSON 备份。**
+因为存了在校学生和校友的个人信息，请按《个人信息保护法》的要求处理：只收集必要信息，告知学生存了什么，离组后按需删除。
 
-**Before switching browsers or machines, export a JSON backup from the Data page.**
+Data lives on **the server you deploy**, and passes through no third party. That includes student and alumni names, year, contact details (WeChat, email), projects and weekly logs, spending records, plus any industry contracts you upload and the dates and amounts extracted from them. Student accounts only ever see their own slice, enforced server-side rather than by hiding buttons in the UI.
+
+The only outbound traffic is the Paper Radar module calling public paper indexes (OpenAlex, Crossref, Europe PMC) — no account, no data uploaded. OCR for scanned contracts runs **on your own server**; contracts are never sent to a cloud service.
+
+Because this stores personal information about current students and alumni, handle it accordingly: collect only what you need, tell students what is stored, and delete records when people leave.
+
+**服务器迁移或重装前，务必在"数据"页导出 JSON 备份。**
+
+**Before migrating or rebuilding the server, export a JSON backup from the Data page.**
 
 ## 常见问题 · FAQ
 
 **端口被占用？** 修改 `start-lab.command` 里的端口号。
 **Port already in use?** Change the port in `start-lab.command`.
 
-**多人怎么用？** 各自在自己电脑上用，各自维护自己课题组的数据。需要迁移时用"数据"页的导出/导入。
-**How do several people use it?** Each on their own machine with their own data. Move data around with export/import on the Data page.
+**多人怎么用？** 部署到一台服务器上，导师用管理员账号，学生账号由导师在「数据」页创建并绑定到学生档案。学生首次登录会被强制改掉初始口令。按 10 人以内的并发设计。
+**How do several people use it?** Deploy it on one server. The supervisor holds the admin account and creates student accounts, each bound to a student record. Students must change their temporary password on first sign-in. Sized for up to about ten concurrent users.
 
-**能放到服务器上多人共享吗？** 当前版本是纯前端单机应用，没有账号体系和并发控制，不适合直接放公网。有这个需求建议 fork 后自行接后端。
-**Can I host it for a shared team?** Not as it stands — it's a purely client-side single-user app with no accounts or concurrency control, so it isn't suitable for the open internet. Fork it and add a backend if you need that.
+**学生能看到什么？** 只有自己的档案、课题、周进展、目标和计划，以及导师给自己的批注。横向课题、经费、合同、其他同学的数据一概看不到——这是服务端拦的。
+**What can a student see?** Only their own record, project, weekly logs, goals and plans, plus the notes their supervisor left them. Industry projects, spending, contracts and other students' data are all invisible — blocked server-side.
+
+**放公网需要注意什么？** 必须配 HTTPS，否则口令是明文过网络的。中国大陆节点的 ECS 绑域名还要先完成 ICP 备案。详见 [deploy/README.md](deploy/README.md)。
+**What do I need before exposing it to the internet?** HTTPS is mandatory — without it passwords cross the network in the clear. See [deploy/README.md](deploy/README.md).
 
 **爬虫要什么条件？** 需要联网，调用的是公开 API，不用注册。
 **What does Paper Radar require?** An internet connection. It calls public APIs and needs no account.

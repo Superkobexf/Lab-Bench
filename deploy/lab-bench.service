@@ -1,0 +1,62 @@
+# systemd unit —— 放到 /etc/systemd/system/lab-bench.service
+#
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now lab-bench
+#   sudo journalctl -u lab-bench -f
+
+[Unit]
+Description=Lab Bench 课题组管理台
+After=network.target
+
+[Service]
+Type=simple
+User=labbench
+Group=labbench
+WorkingDirectory=/opt/lab-bench/server
+
+Environment="LAB_BENCH_DB=/var/lib/lab-bench/lab.db"
+Environment="LAB_BENCH_UPLOADS=/var/lib/lab-bench/uploads"
+# 公网部署必须是 1（默认就是 1）。只有本机 http 调试才置 0。
+Environment="LAB_BENCH_SECURE_COOKIE=1"
+
+# ── 2C2G 的内存预算 ────────────────────────────────────────
+# argon2 的内存开销是每次哈希的，不是全局的：
+# 10 人同时登录 = 10 × 这个值。2C2G 用 19，4G 以上可以调到 46。
+Environment="LAB_BENCH_ARGON2_MEMORY_MB=19"
+
+# OCR 跑在独立子进程里，用完就退，不占用 web 进程的内存。
+# 这里是子进程的地址空间上限：撑爆时是它自己报错退出，
+# 而不是让内核的 OOM Killer 随机挑一个进程杀（很可能杀掉 web 或 nginx）。
+Environment="LAB_BENCH_OCR_MEM_MB=1200"
+Environment="LAB_BENCH_OCR_TIMEOUT=300"
+# 2C2G 上如果扫描件识别老是内存不足，把 DPI 降到 150 试试
+Environment="LAB_BENCH_OCR_DPI=200"
+Environment="LAB_BENCH_OCR_MAX_PAGES=12"
+# 留空自动选（优先 RapidOCR）；大机器上想用 PaddleOCR 就填 paddleocr
+Environment="LAB_BENCH_OCR_ENGINE="
+
+ExecStart=/opt/lab-bench/.venv/bin/uvicorn app:app \
+    --host 127.0.0.1 --port 5299 \
+    --workers 1 \
+    --proxy-headers --forwarded-allow-ips=127.0.0.1
+
+# 只监听 127.0.0.1，外面只能通过 nginx 进来。
+# workers 保持 1：sqlite 单写者，10 人以内单进程完全够用（实测
+# 10 并发 593 req/s、内存峰值 90MB），多开 worker 只是白占内存。
+
+Restart=on-failure
+RestartSec=5
+
+# 收紧权限
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/lab-bench
+# OCR 子进程要能 fork，不能开 NoNewPrivileges 之外的更严限制
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target
