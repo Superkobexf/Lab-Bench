@@ -257,6 +257,12 @@ const API = {
     return this.get("/api/files");
   },
 
+  /* ── 审计日志 ── */
+
+  listAudit(limit = 100) {
+    return this.get(`/api/audit?limit=${encodeURIComponent(limit)}`);
+  },
+
   /* ── 回收站 ── */
 
   listTrash() {

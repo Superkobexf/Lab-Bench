@@ -36,6 +36,7 @@ RECORD_LABEL = {
     "archiveScans": ("folder",),
     "achievements": ("title",),
     "financeRecords": ("item",),
+    "automationPipelines": ("title",),
 }
 
 COLLECTION_LABEL = {
@@ -51,6 +52,7 @@ COLLECTION_LABEL = {
     "archiveScans": "档案扫描",
     "achievements": "成果",
     "financeRecords": "经费记录",
+    "automationPipelines": "科研自动化流程",
 }
 
 
@@ -217,7 +219,7 @@ def restore(payload: dict, request: Request, session=Depends(require_csrf)):
             if collection == "students":
                 for child in ("topics", "weeklyLogs", "duties", "weeklyDrafts",
                               "achievements", "financeRecords", "paperCrawler",
-                              "archiveScans"):
+                              "archiveScans", "automationPipelines"):
                     cur2 = conn.execute(
                         "UPDATE records SET deleted=0, updated_at=?, updated_by=?"
                         " WHERE collection=? AND student_id=? AND deleted=1",

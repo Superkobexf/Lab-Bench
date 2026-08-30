@@ -1951,3 +1951,32 @@ h1 {
   outline-offset: 1px;
   border-radius: 3px;
 }
+
+/* ── 周计划条目关联目标 ── */
+
+.plan-items li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.plan-items li > label { flex: 1 1 auto; min-width: 180px; }
+
+.plan-goal-select {
+  flex: 0 0 auto;
+  max-width: 220px;
+  padding: 3px 7px;
+  font-size: 12px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #fff;
+  color: var(--muted);
+}
+
+.plan-goal-select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.plan-goal-summary { margin: 8px 0 0; }

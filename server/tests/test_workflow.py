@@ -282,3 +282,88 @@ def test_login_lockout_after_repeated_failures(login, client):
                           json={"username": "lisi", "password": "Student-2026"})
     assert blocked.status_code == 401
     assert "尝试次数过多" in blocked.json()["error"]
+
+
+# ── 小尾巴：审计日志、回收站新集合、计划关联目标 ──────────────
+
+
+def test_audit_log_is_readable_by_pi(login):
+    """审计表原本只写不读，是个半成品。现在必须有出口。"""
+    pi = login("pi")
+    pi.post("/api/contracts", json={"project_id": "p1", "title": "留痕合同"})
+
+    entries = pi.get("/api/audit").json()["entries"]
+    assert entries, "登录和建合同都该留下记录"
+    actions = {e["action"] for e in entries}
+    assert "login.ok" in actions
+    assert "contract.create" in actions
+    assert all("username" in e and "created_at" in e for e in entries)
+
+
+def test_audit_log_is_pi_only(login):
+    """里面有用户名和 IP，学生不能看。"""
+    student = login("zhangsan")
+    assert student.get("/api/audit").status_code == 403
+
+
+def test_failed_logins_are_recorded(login, client):
+    login("pi").logout()
+    client.post("/api/auth/login", json={"username": "lisi", "password": "wrong"})
+    pi = login("pi")
+    actions = [e["action"] for e in pi.get("/api/audit").json()["entries"]]
+    assert "login.fail" in actions
+
+
+def test_automation_pipeline_shows_in_trash_with_label(login):
+    """新集合必须有中文标签，否则回收站里显示的是原始集合名。"""
+    pi = login("pi")
+    pi.delete("/api/records/automationPipelines/ap1")
+    items = pi.get("/api/trash").json()["items"]
+    entry = [i for i in items if i["id"] == "ap1"][0]
+    assert entry["kind_label"] == "科研自动化流程"
+    assert entry["label"] == "张三的流程"
+
+
+def test_restoring_student_also_restores_pipelines(login):
+    pi = login("pi")
+    pi.delete("/api/records/students/s1")
+    pi.delete("/api/records/automationPipelines/ap1")
+    pi.post("/api/trash/restore",
+            json={"kind": "record", "collection": "students", "id": "s1"})
+    state = pi.get("/api/state").json()["state"]
+    assert any(p["id"] == "ap1" for p in state["automationPipelines"])
+
+
+def test_plan_item_can_link_to_goal(login):
+    """plans.items[].goal_id 之前存了没用。挂上之后才看得出
+    这周的活有没有在推动目标。"""
+    pi = login("pi")
+    goal = pi.post("/api/goals",
+                   json={"student_id": "s1", "horizon": "long", "title": "发一区"}
+                   ).json()["goal"]
+    plan = pi.put("/api/plans", json={
+        "student_id": "s1", "week_of": "2026-09-07", "status": "已提交",
+        "items": [
+            {"id": "i1", "text": "跑实验", "done": False, "goal_id": goal["id"]},
+            {"id": "i2", "text": "杂事", "done": False},
+        ],
+    }).json()["plan"]
+
+    linked = [i for i in plan["items"] if i.get("goal_id")]
+    assert len(linked) == 1
+    assert linked[0]["goal_id"] == goal["id"]
+
+    # 重新读回来也要保留关联
+    plans = pi.get("/api/plans?student_id=s1").json()["plans"]
+    saved = [p for p in plans if p["week_of"] == "2026-09-07"][0]
+    assert [i.get("goal_id") for i in saved["items"]] == [goal["id"], None]
+
+
+def test_plan_rejects_unknown_field(login):
+    """Pydantic 的 extra=forbid 要真的挡住多余字段。"""
+    pi = login("pi")
+    response = pi.put("/api/plans", json={
+        "student_id": "s1", "week_of": "2026-09-14",
+        "items": [{"id": "i1", "text": "x", "evil": 1}],
+    })
+    assert response.status_code == 422

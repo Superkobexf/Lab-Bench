@@ -882,20 +882,67 @@ function renderPlanRow(plan) {
         </div>
       </div>
       <ul class="plan-items">
-        ${items.map((item) => `
-          <li class="${item.done ? "done" : ""}">
-            <label>
-              <input type="checkbox" data-action="toggle-plan-item"
-                     data-id="${escapeHTML(plan.id)}:${escapeHTML(item.id)}"
-                     ${item.done ? "checked" : ""} />
-              ${escapeHTML(item.text)}
-            </label>
-          </li>
-        `).join("") || '<li class="meta">这一周还没有具体条目。</li>'}
+        ${items.map((item) => renderPlanItem(plan, item)).join("")
+          || '<li class="meta">这一周还没有具体条目。</li>'}
       </ul>
+      ${renderPlanGoalSummary(items)}
       ${renderAnnotationList(notes)}
     </article>
   `;
+}
+
+/* 每条计划都能挂到一个目标上。plans.items[].goal_id 一直存着，
+   只是之前没有入口——挂上之后才看得出"这周干的活有没有在推动长期目标"。 */
+function renderPlanItem(plan, item) {
+  const linked = goalsCache.find((goal) => goal.id === item.goal_id);
+  return `
+    <li class="${item.done ? "done" : ""}">
+      <label>
+        <input type="checkbox" data-action="toggle-plan-item"
+               data-id="${escapeHTML(plan.id)}:${escapeHTML(item.id)}"
+               ${item.done ? "checked" : ""} />
+        ${escapeHTML(item.text)}
+      </label>
+      <select class="plan-goal-select" data-plan-item="${escapeHTML(plan.id)}:${escapeHTML(item.id)}"
+              aria-label="${escapeHTML(`为「${item.text}」选择关联目标`)}">
+        <option value="">未关联目标</option>
+        ${goalsCache.map((goal) => `
+          <option value="${escapeHTML(goal.id)}" ${goal.id === item.goal_id ? "selected" : ""}>
+            ${goal.horizon === "long" ? "长期" : "短期"}：${escapeHTML(goal.title)}
+          </option>
+        `).join("")}
+      </select>
+      ${linked ? `<span class="tag ${linked.horizon === "long" ? "blue" : "ok"}">${linked.horizon === "long" ? "长期目标" : "短期目标"}</span>` : ""}
+    </li>
+  `;
+}
+
+/* 一周的活里有多少是在推动目标的。全是"未关联"说明这周在忙杂事。 */
+function renderPlanGoalSummary(items) {
+  if (!items.length) return "";
+  const linked = items.filter((item) => item.goal_id).length;
+  if (!linked) {
+    return '<p class="meta plan-goal-summary">这一周还没有条目关联到目标。</p>';
+  }
+  return `<p class="meta plan-goal-summary">${linked}/${items.length} 条在推动已设定的目标。</p>`;
+}
+
+async function setPlanItemGoal(compound, goalId) {
+  const [planId, itemId] = String(compound).split(":");
+  const plan = plansCache.find((entry) => entry.id === planId);
+  if (!plan) return;
+  const items = (plan.items || []).map((item) =>
+    item.id === itemId ? { ...item, goal_id: goalId || null } : item,
+  );
+  const body = { week_of: plan.week_of, items, status: plan.status };
+  if (API.isPI) body.student_id = plan.student_id;
+  try {
+    await API.savePlan(body);
+    await loadGoalsData(true);
+    setSyncStatus("saved");
+  } catch (error) {
+    setSyncStatus("error", error.message);
+  }
 }
 
 function renderAnnotationList(notes) {
@@ -2862,6 +2909,7 @@ function renderSettings() {
     </div>
     <div style="margin-top: 14px;">${renderAccountsPanel()}</div>
     <div style="margin-top: 14px;">${renderTrashPanel()}</div>
+    <div style="margin-top: 14px;">${renderAuditPanel()}</div>
   `);
 }
 
@@ -2869,15 +2917,19 @@ function renderSettings() {
 
 let usersCache = [];
 let trashCache = [];
+let auditCache = [];
 let adminLoaded = false;
 
 async function loadAdminData(force = false) {
   if (!API.isPI) return;
   if (adminLoaded && !force) return;
   try {
-    const [u, t] = await Promise.all([API.listUsers(), API.listTrash()]);
+    const [u, t, a] = await Promise.all([
+      API.listUsers(), API.listTrash(), API.listAudit(80),
+    ]);
     usersCache = u.users || [];
     trashCache = t.items || [];
+    auditCache = a.entries || [];
     adminLoaded = true;
   } catch (error) {
     setSyncStatus("error", error.message);
@@ -3030,6 +3082,80 @@ async function toggleUserActive(userId) {
   } catch (error) {
     alert(error.message);
   }
+}
+
+/* ── 操作记录 ── */
+
+/* 每个动作对应一句人话。多人写入之后，"谁在什么时候改了什么"
+   是个真问题；直接把 action 代码摆出来没人看得懂。 */
+const AUDIT_LABELS = {
+  "login.ok": "登录成功",
+  "login.fail": "登录失败",
+  "logout": "退出登录",
+  "password.change": "修改口令",
+  "user.create": "创建账号",
+  "user.update": "修改账号",
+  "record.delete": "删除记录",
+  "import": "导入备份",
+  "goal.create": "新增目标",
+  "goal.delete": "删除目标",
+  "contract.create": "新建合同",
+  "contract.upload": "上传合同版本",
+  "contract.delete": "删除合同",
+  "todo.delete": "删除待办",
+  "trash.restore": "从回收站恢复",
+  "trash.purge": "彻底删除",
+  "file.upload": "上传文件",
+  "file.delete": "删除文件",
+};
+
+function auditLabel(action) {
+  return AUDIT_LABELS[action] || action;
+}
+
+function auditClass(action) {
+  if (action === "login.fail") return "danger";
+  if (action.endsWith(".delete") || action === "trash.purge") return "warn";
+  if (action.startsWith("login") || action === "logout") return "";
+  return "blue";
+}
+
+function renderAuditPanel() {
+  if (!API.isPI) return "";
+  const failures = auditCache.filter((entry) => entry.action === "login.fail").length;
+  return `
+    <div class="panel">
+      <div class="panel-head">
+        <h2>操作记录</h2>
+        <span class="tag ${failures ? "warn" : "ok"}">
+          ${failures ? `最近有 ${failures} 次登录失败` : "最近 80 条"}
+        </span>
+      </div>
+      <p class="meta">谁在什么时候改了什么。登录失败集中出现时值得留意——可能有人在试口令。</p>
+      ${auditCache.length ? `
+        <div class="table-scroll">
+          <table class="table">
+            <thead><tr><th>时间</th><th>账号</th><th>操作</th><th>对象</th><th>来源 IP</th></tr></thead>
+            <tbody>${auditCache.map(renderAuditRow).join("")}</tbody>
+          </table>
+        </div>
+      ` : '<div class="empty-state"><strong>还没有记录</strong><p>登录、改数据、删除和导入都会记在这里。</p></div>'}
+    </div>
+  `;
+}
+
+function renderAuditRow(entry) {
+  return `
+    <tr>
+      <td class="meta">${escapeHTML(formatDeletedAt(entry.created_at))}</td>
+      <td>${escapeHTML(entry.display_name || entry.username)}${
+        entry.role ? ` <span class="tag ${entry.role === "pi" ? "blue" : "violet"}">${entry.role === "pi" ? "导师" : "学生"}</span>` : ""
+      }</td>
+      <td><span class="tag ${auditClass(entry.action)}">${tv(auditLabel(entry.action))}</span></td>
+      <td class="meta">${escapeHTML(entry.target || "—")}</td>
+      <td class="meta">${escapeHTML(entry.ip || "—")}</td>
+    </tr>
+  `;
 }
 
 /* ── 回收站 ── */
@@ -4879,6 +5005,11 @@ function attachEvents() {
   });
 
   document.body.addEventListener("change", (event) => {
+    const planItem = event.target.closest?.("[data-plan-item]");
+    if (planItem) {
+      setPlanItemGoal(planItem.dataset.planItem, event.target.value);
+      return;
+    }
     if (event.target.id === "goalsStudentPicker") {
       goalsStudentId = event.target.value;
       goalsLoaded = false;

@@ -454,6 +454,46 @@ async def import_backup(request: Request, session=Depends(require_pi)):
     return {"ok": True, "imported": counts}
 
 
+@app.get("/api/audit")
+def audit_log(
+    limit: int = 100,
+    action: str = "",
+    session=Depends(require_pi),
+):
+    """审计日志。多人写入之后，"谁在什么时候改了什么"是个真问题。
+
+    只给导师看：里面有用户名、IP 和操作目标。
+    """
+    limit = max(1, min(int(limit or 100), 500))
+    sql = (
+        "SELECT a.*, u.username, u.display_name, u.role"
+        " FROM audit_log a LEFT JOIN users u ON u.id = a.user_id"
+    )
+    args = []
+    if action:
+        sql += " WHERE a.action LIKE ?"
+        args.append(action[:40] + "%")
+    sql += " ORDER BY a.id DESC LIMIT ?"
+    args.append(limit)
+    rows = db.get_conn().execute(sql, args).fetchall()
+    return {
+        "entries": [
+            {
+                "id": r["id"],
+                "action": r["action"],
+                "target": r["target"],
+                "detail": r["detail"],
+                "ip": r["ip"],
+                "created_at": r["created_at"],
+                "username": r["username"] or "（已删除账号）",
+                "display_name": r["display_name"] or "",
+                "role": r["role"] or "",
+            }
+            for r in rows
+        ]
+    }
+
+
 @app.get("/api/export")
 def export_backup(session=Depends(require_pi)):
     conn = db.get_conn()
