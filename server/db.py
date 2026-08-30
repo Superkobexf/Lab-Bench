@@ -236,6 +236,32 @@ CREATE TABLE IF NOT EXISTS todos (
 CREATE INDEX IF NOT EXISTS idx_todos_due ON todos(done, deleted, due_date);
 CREATE INDEX IF NOT EXISTS idx_todos_source ON todos(source, source_id);
 
+-- ── 文件存储 ────────────────────────────────────────────────
+-- 浏览器时代只存文件名和摘要，是 localStorage 容量逼出来的妥协。
+-- 有了自己的服务器就没必要继续：机制图、周报附件、成果证明都存真身。
+--
+-- 机制图必须存在本域才能显示：CSP 是 img-src 'self'，外链图床一律被拦。
+-- 放宽 CSP 不是办法——那等于为了一张图把整个 XSS 防线打开。
+CREATE TABLE IF NOT EXISTS files (
+    id          TEXT PRIMARY KEY,
+    -- image 走内联显示，doc 一律当附件下载。
+    -- 这个区分是安全边界：任何能被浏览器当 HTML 解析的东西
+    -- 内联到本域，就等于在应用的 origin 里执行脚本。
+    kind        TEXT    NOT NULL CHECK (kind IN ('image', 'doc')),
+    filename    TEXT    NOT NULL,
+    stored_path TEXT    NOT NULL,
+    mime        TEXT    NOT NULL,
+    size        INTEGER NOT NULL,
+    sha256      TEXT    NOT NULL,
+    -- 归属：挂在哪个学生名下，决定学生端能不能看到
+    student_id  TEXT,
+    uploaded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at  TEXT    NOT NULL,
+    deleted     INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_files_student ON files(student_id, deleted);
+CREATE INDEX IF NOT EXISTS idx_files_sha ON files(sha256);
+
 -- ── 审计 ────────────────────────────────────────────────────
 -- 公网部署 + 多人写入，出问题时要能回答"谁在什么时候改了什么"
 CREATE TABLE IF NOT EXISTS audit_log (

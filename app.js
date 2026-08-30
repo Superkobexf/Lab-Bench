@@ -3258,14 +3258,87 @@ function topicForm(topic = {}) {
       field("progress", "进度百分比", "number", topic.progress || 0),
       field("risk", "风险", "select", topic.risk || "低", "", [["低", "低"], ["中", "中"], ["高", "高"]]),
       field("nextReview", "下次复盘", "date", topic.nextReview || todayISO()),
-      field("mechanismImage", "机制图图片 URL", "url", topic.mechanismImage || topic.mechanismImageUrl || "", "部署后可访问的 http/https 图片地址（可选）"),
+      mechanismImageField(topic),
       field("plan", "整体规划", "textarea", topic.plan || ""),
       field("experiments", "实验进展", "textarea", topic.experiments || ""),
       field("literature", "文献库", "textarea", topic.literature || ""),
       field("analysis", "数据分析", "textarea", topic.analysis || ""),
     ].join(""),
-    (values) => upsert("topics", { ...topic, ...values, progress: Number(values.progress), id: topic.id || uid("t") })
+    (values) => {
+      const next = { ...topic, ...values, progress: Number(values.progress), id: topic.id || uid("t") };
+      /* 上传控件把 fileId 写在隐藏输入里，表单只负责把它带回来。
+         老数据里的 mechanismImage 外链保持原样，不强制迁移。 */
+      next.mechanismImage = values.mechanismImage || "";
+      delete next.mechanismImageUrl;
+      upsert("topics", next);
+    },
   );
+}
+
+/* 机制图从"填外链"改成"传到自己服务器"。
+
+   外链在这套部署下根本显示不出来：CSP 是 img-src 'self'，浏览器会拦掉，
+   而降级提示写的是"请检查图片地址"——地址明明是对的，这个提示会误导人。
+   放宽 CSP 不是办法，那等于为一张图把 XSS 防线打开。 */
+function mechanismImageField(topic) {
+  const current = topic.mechanismImage || topic.mechanismImageUrl || "";
+  const isUpload = current.startsWith("/api/files/");
+  return `
+    <div class="field full">
+      <label>机制图</label>
+      <div class="upload-field" id="mechanismUpload">
+        <input type="hidden" id="mechanismImage" name="mechanismImage" value="${escapeHTML(current)}" />
+        <div class="upload-preview" id="mechanismUploadPreview">
+          ${current
+            ? `<img src="${tv(current)}" alt="当前机制图" />`
+            : '<span class="upload-empty">还没有机制图</span>'}
+        </div>
+        <div class="upload-actions">
+          <button class="small-button" type="button" data-action="upload-mechanism">选择图片上传</button>
+          ${current ? '<button class="small-button danger-button" type="button" data-action="clear-mechanism">移除</button>' : ""}
+        </div>
+        <p class="meta" id="mechanismUploadHint">
+          ${current && !isUpload
+            ? "当前是外部链接，在本系统里显示不出来（内容安全策略只允许本站图片）。重新上传一次即可。"
+            : "支持 PNG / JPG / WebP / GIF，最大 8MB。图片存在你自己的服务器上。"}
+        </p>
+      </div>
+    </div>
+  `;
+}
+
+/* 上传是即时的：文件先传到服务器拿到 URL，再由表单保存这个 URL。
+   不在表单提交时才传——那样失败了整个表单都白填。 */
+async function uploadMechanismImage() {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".png,.jpg,.jpeg,.webp,.gif";
+  input.addEventListener("change", async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    const hint = $("#mechanismUploadHint");
+    const studentPicker = $("#studentId");
+    if (hint) hint.textContent = t("正在上传…");
+    try {
+      const result = await API.uploadFile(file, studentPicker?.value || "");
+      const url = result.file.url;
+      $("#mechanismImage").value = url;
+      $("#mechanismUploadPreview").innerHTML = `<img src="${tv(url)}" alt="当前机制图" />`;
+      if (hint) hint.textContent = t(`已上传 ${file.name}（${formatFileSize(file.size)}），保存课题后生效。`);
+    } catch (error) {
+      if (hint) hint.textContent = `${t("上传失败")}：${error.message}`;
+    }
+  });
+  input.click();
+}
+
+function clearMechanismImage() {
+  const field = $("#mechanismImage");
+  if (!field) return;
+  field.value = "";
+  $("#mechanismUploadPreview").innerHTML = '<span class="upload-empty">还没有机制图</span>';
+  const hint = $("#mechanismUploadHint");
+  if (hint) hint.textContent = t("已移除，保存课题后生效。");
 }
 
 function industryForm(project = {}) {
@@ -3555,6 +3628,8 @@ function handleAction(action, id) {
   if (action === "dismiss-item") setContractItem(id, { dismissed: true });
   if (action === "edit-item") contractItemForm(id);
   if (action === "add-todo") todoForm();
+  if (action === "upload-mechanism") uploadMechanismImage();
+  if (action === "clear-mechanism") clearMechanismImage();
   if (action === "add-user") userForm();
   if (action === "edit-user") editUserForm(id);
   if (action === "reset-user-password") resetUserPasswordForm(id);
@@ -3904,8 +3979,10 @@ function renderAttachments(collection, record) {
       ${attachments
         .map(
           (file) => `
-        <span class="attachment-chip" title="${escapeHTML(`${file.name} · ${formatFileSize(file.size)} · ${file.parser || "文件名"}`)}">
-          <strong>${escapeHTML(file.name)}</strong>
+        <span class="attachment-chip ${file.url ? "stored" : ""}" title="${escapeHTML(`${file.name} · ${formatFileSize(file.size)} · ${file.parser || "文件名"}${file.url ? "" : " · 未存到服务器"}`)}">
+          ${file.url
+            ? `<a href="${escapeHTML(safeAppURL(file.url))}" target="_blank" rel="noopener noreferrer"><strong>${escapeHTML(file.name)}</strong></a>`
+            : `<strong>${escapeHTML(file.name)}</strong>`}
           <span>${formatFileSize(file.size)}</span>
           <button type="button" data-action="remove-attachment" data-id="${collection}:${escapeHTML(record.id)}:${escapeHTML(file.id)}" aria-label="移除关联">×</button>
         </span>`
@@ -3913,6 +3990,13 @@ function renderAttachments(collection, record) {
         .join("")}
     </div>
   `;
+}
+
+/* 附件链接只允许指向本站的文件接口。历史数据里可能残留任意 URL，
+   直接当 href 用等于把外部链接混进来。 */
+function safeAppURL(value = "") {
+  const path = String(value);
+  return /^\/api\/files\/[A-Za-z0-9_-]+$/.test(path) ? path : "";
 }
 
 function formatFileSize(size = 0) {
@@ -3929,10 +4013,12 @@ async function attachFilesTo(target = "") {
   if (!files.length) return;
 
   record.attachments = record.attachments || [];
+  setSyncStatus("saving");
+  const failed = [];
   for (const file of files) {
     const ext = file.name.includes(".") ? file.name.split(".").pop().toLowerCase() : "";
     const insight = await extractFileInsight(file, ext);
-    record.attachments.push({
+    const entry = {
       id: uid("file"),
       name: file.name,
       size: file.size,
@@ -3940,12 +4026,28 @@ async function attachFilesTo(target = "") {
       addedAt: todayISO(),
       parser: insight.parser,
       excerpt: clipContent(insight.content || "", ATTACHMENT_EXCERPT_LIMIT),
-    });
+    };
+    /* 文本摘要照旧提取（用于搜索和档案扫描），另外把文件本身也传上服务器。
+       上传失败不影响摘要——退回旧行为，只记文件名，并在界面上说明。 */
+    try {
+      const uploaded = await API.uploadFile(file, record.studentId || "");
+      entry.fileId = uploaded.file.id;
+      entry.url = uploaded.file.url;
+      entry.kind = uploaded.file.kind;
+    } catch (error) {
+      failed.push(`${file.name}（${error.message}）`);
+    }
+    record.attachments.push(entry);
   }
-  saveState();
+  await saveState();
   render();
+  const stored = record.attachments.slice(-files.length).filter((file) => file.url).length;
   const parsed = record.attachments.slice(-files.length).filter((file) => file.excerpt).length;
-  alert(t(`已关联 ${files.length} 个文件，其中 ${parsed} 个成功读取到文本内容。\n注意：系统只记录文件名和文本摘要，不保存文件本身，原文件请勿删除或移动。`));
+  let message = t(`已关联 ${files.length} 个文件：${stored} 个已存到服务器，${parsed} 个读取到文本摘要。`);
+  if (failed.length) {
+    message += "\n\n" + t(`以下文件只记录了文件名，没能存到服务器：\n${failed.join("\n")}\n这些文件的原件请勿删除或移动。`);
+  }
+  alert(message);
 }
 
 /* showOpenFilePicker 只有 Chrome/Edge 支持，其他浏览器回退到隐藏的 file input。 */

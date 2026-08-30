@@ -1907,3 +1907,47 @@ h1 {
 .sync-status.error { background: #fdeceb; color: #a3271f; }
 
 .nav-item.hidden { display: none; }
+
+/* ── 文件上传控件 ── */
+
+.upload-field {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--panel, #fff);
+}
+
+.upload-preview {
+  min-height: 96px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--line);
+  border-radius: 6px;
+  background: #f9faf9;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.upload-preview img {
+  max-width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  display: block;
+}
+
+.upload-empty { color: var(--muted); font-size: 13px; }
+
+.upload-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+
+#mechanismUploadHint { margin: 0; line-height: 1.6; }
+
+.attachment-chip.stored a {
+  color: var(--accent-strong, #0b5d56);
+  text-decoration: none;
+}
+.attachment-chip.stored a:hover { text-decoration: underline; }
+.attachment-chip.stored a:focus-visible {
+  outline: 2px solid var(--accent, #0f766e);
+  outline-offset: 1px;
+  border-radius: 3px;
+}

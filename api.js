@@ -242,6 +242,21 @@ const API = {
     return this.patch(`/api/contracts/items/${encodeURIComponent(itemId)}`, body);
   },
 
+  /* ── 文件 ── */
+
+  uploadFile(file, studentId = "") {
+    const form = new FormData();
+    form.append("file", file);
+    if (studentId) form.append("student_id", studentId);
+    return this.post("/api/files", form);
+  },
+  deleteFile(id) {
+    return this.del(`/api/files/${encodeURIComponent(id)}`);
+  },
+  listFiles() {
+    return this.get("/api/files");
+  },
+
   /* ── 回收站 ── */
 
   listTrash() {
