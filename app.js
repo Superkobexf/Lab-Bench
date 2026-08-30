@@ -1,4 +1,4 @@
-const APP_VERSION = "generic-v1";
+const APP_VERSION = "lab-bench-v11";
 const PAPER_CRAWL_WINDOW_DAYS = 30;
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const INTRO_SESSION_KEY = "lab-group-intro-seen-v1";
@@ -10,7 +10,7 @@ const INTRO_REDUCED_MOTION_MS = 650;
 const COLLECTIONS = [
   "students", "alumni", "topics", "industryProjects", "collaborationLeads",
   "paperCrawler", "duties", "weeklyLogs", "weeklyDrafts", "archiveScans",
-  "achievements", "financeRecords",
+  "achievements", "financeRecords", "automationPipelines",
 ];
 
 const DEFAULT_SETTINGS = {
@@ -30,6 +30,7 @@ const state = emptyState();
 let serverSnapshot = {};
 let currentView = "dashboard";
 let selectedGraphStudent = "example";
+let selectedMechanismStudent = "example";
 
 const viewMeta = {
   dashboard: ["总览", "学生进展、风险和事务负担的今日快照。"],
@@ -39,14 +40,15 @@ const viewMeta = {
   alumni: ["毕业学生", "毕业去向、现任职位、联系方式和可交流资源。"],
   topics: ["硕士课题", "规划、实验进展、文献库、数据分析和阶段风险。"],
   discussion: ["研讨看板", "机制图、文献知识图谱和待入学课题建议。"],
-  archive: ["档案扫描", "按学生汇总材料版本、关键文件和待导师检查点。"],
   industry: ["横向课题", "合作单位、合作老师、学生分工和后续具体项目。"],
   leads: ["合作线索", "企业、科研院所、大学等外部合作与学生发展机会的长期跟踪。"],
   crawler: ["AI 爬虫", "按学生课题配置检索词，抓取近 30 天新论文并沉淀重要发现。"],
   duties: ["课题组事务", "事务量、完成情况和劳务费分配依据。"],
-  weekly: ["周进展", "每周记录实验、数据、问题、下周计划和导师反馈。"],
+  weekly: ["进展档案", "融合周进展、候选稿、档案材料和导师检查点。"],
   achievements: ["成果展板", "SCI、投稿、论文草稿和阶段成果的公开统计。"],
   funding: ["经费投入", "试剂耗材、仪器检测、论文版面、补助和投入产出比。"],
+  automation: ["科研自动化", "把原始数据到图表、分析和讨论写作切成可视化流水线。"],
+  natureSkill: ["NATURE Skills", "接入开源科研技能库，作为学生科研 Agent 工作流入口。"],
   settings: ["数据", "本地导入导出、重置示例数据和提醒说明。"],
 };
 
@@ -240,6 +242,12 @@ function migrateState(data) {
   COLLECTIONS.forEach((key) => {
     if (!Array.isArray(data[key])) data[key] = [];
   });
+  data.automationPipelines = data.automationPipelines.map((pipeline) => ({
+    ...pipeline,
+    steps: Array.isArray(pipeline.steps) && pipeline.steps.length
+      ? pipeline.steps
+      : automationStepTemplate(),
+  }));
   data.settings = { ...DEFAULT_SETTINGS, ...(data.settings || {}) };
   data.settings.appVersion = APP_VERSION;
   return data;
@@ -288,9 +296,10 @@ async function saveState() {
   const settingsNow = JSON.stringify(state.settings || {});
   if (settingsNow !== serverSnapshot.settings) {
     const { weeklyReviewDay, notifyHour, stipendRate, lastExportAt,
-            lastArchiveScanAt } = state.settings || {};
+            lastArchiveScanAt, unmatchedFolders } = state.settings || {};
     jobs.push(API.putSettings({
       weeklyReviewDay, notifyHour, stipendRate, lastExportAt, lastArchiveScanAt,
+      unmatchedFolders,
     }));
   }
   if (!jobs.length) return true;
@@ -319,6 +328,7 @@ function seedData() {
     archiveScans: [],
     achievements: exampleAchievements(),
     financeRecords: exampleFinanceRecords(),
+    automationPipelines: [],
     settings: {
       weeklyReviewDay: 5,
       notifyHour: 17,
@@ -347,7 +357,9 @@ function studentNameHTML(id) {
    escapeHTML 能挡住属性闭合，挡不住 javascript: 这类伪协议。 */
 function safeURL(value = "") {
   try {
-    const url = new URL(String(value), location.href);
+    const raw = String(value || "").trim();
+    if (!raw) return "";
+    const url = new URL(raw, location.href);
     return url.protocol === "http:" || url.protocol === "https:" ? url.href : "";
   } catch {
     return "";
@@ -427,7 +439,6 @@ function render() {
   renderAlumni();
   renderTopics();
   renderDiscussion();
-  renderArchive();
   renderIndustry();
   renderLeads();
   renderCrawler();
@@ -435,6 +446,8 @@ function render() {
   renderWeekly();
   renderAchievements();
   renderFunding();
+  renderAutomation();
+  renderNatureSkill();
   renderSettings();
 }
 
@@ -1562,9 +1575,9 @@ function discussionMaterials() {
     const topic = state.topics.find((t) => t.studentId === student.id);
     return {
       studentId: student.id,
-      title: `${escapeHTML(student.name)}的课题机制图`,
-      src: "",
-      focus: topic ? `${escapeHTML(topic.title)} — ${escapeHTML(topic.phase)}` : "暂无课题",
+      title: topic?.title || "",
+      src: topic?.mechanismImage || topic?.mechanismImageUrl || "",
+      focus: topic ? `${topic.title} — ${topic.phase}` : "暂无课题",
     };
   });
 
@@ -1615,16 +1628,20 @@ function renderDiscussion() {
   const materials = discussionMaterials();
   const graphs = materials.graphs;
   const graph = graphs.find((item) => item.studentId === selectedGraphStudent) || graphs[0];
+  const mechanism = materials.mechanisms.find((item) => item.studentId === selectedMechanismStudent) || materials.mechanisms[0];
 
   $("#discussionView").innerHTML = tr(`
     <div class="panel discussion-band">
       <div class="panel-head">
         <h2>机制图讨论</h2>
-        <span class="tag blue">研一 + 研二</span>
+        <span class="tag blue">${mechanism ? studentNameHTML(mechanism.studentId) : "研一 + 研二"}</span>
       </div>
       ${materials.mechanisms.length ? `
-        <div class="mechanism-grid">
-          ${materials.mechanisms.map(renderMechanismCard).join("")}
+        <div class="mechanism-viewer">
+          <div class="mechanism-thumbs">
+            ${materials.mechanisms.map((item) => renderMechanismCard(item, item.studentId === mechanism.studentId)).join("")}
+          </div>
+          ${renderMechanismPreview(mechanism)}
         </div>
       ` : '<div class="empty-state"><strong>还没有可展示的学生</strong><p>添加学生并绑定课题后，机制图会出现在这里。</p></div>'}
     </div>
@@ -1671,21 +1688,43 @@ function renderDiscussion() {
   `);
 }
 
-function renderMechanismCard(item) {
+function renderMechanismCard(item, active = false) {
+  const student = state.students.find((entry) => entry.id === item.studentId);
+  const imageURL = safeURL(item.src);
   return `
-    <article class="mechanism-card">
-      <div style="aspect-ratio: 4/3; display:grid; place-items:center; border:1px dashed var(--line); border-radius:6px; background:#f9faf9; color:var(--muted); font-size:13px;">
-        暂无机制图<br>可将图片放入学生档案目录
-      </div>
+    <button class="mechanism-card ${active ? "active-mechanism" : ""}" type="button" aria-pressed="${active ? "true" : "false"}" data-action="select-mechanism" data-id="${escapeHTML(item.studentId)}">
+      ${imageURL
+        ? `<img src="${tv(imageURL)}" alt="${escapeHTML(studentName(item.studentId))}机制图" data-mechanism-image="thumbnail" loading="lazy" />`
+        : '<div class="mechanism-placeholder">暂无机制图<br><span>可在课题编辑中填写图片 URL</span></div>'}
       <div>
         <div class="row-head">
-          <h3>${escapeHTML(studentName(item.studentId))}</h3>
-          <span class="tag blue">${tv(state.students.find((student) => student.id === item.studentId)?.grade || "")}</span>
+          <h3>${studentNameHTML(item.studentId)}</h3>
+          <span class="tag blue">${tv(student?.grade || "")}</span>
         </div>
-        <strong>${tr(item.title)}</strong>
-        <p>${tr(item.focus)}</p>
+        <strong>${item.title ? escapeHTML(item.title) : tv("暂无课题")}</strong>
+        <p>${escapeHTML(item.focus)}</p>
       </div>
-    </article>
+    </button>
+  `;
+}
+
+function renderMechanismPreview(item) {
+  const imageURL = safeURL(item?.src);
+  return `
+    <div class="mechanism-preview">
+      <div class="row-head">
+        <div>
+          <h3>${studentNameHTML(item.studentId)} · ${item.title ? escapeHTML(item.title) : tv("暂无课题")}</h3>
+          <p class="meta">${escapeHTML(item.focus)}</p>
+        </div>
+        <span class="tag ok">大图查看</span>
+      </div>
+      <div class="mechanism-preview-stage">
+        ${imageURL
+          ? `<img src="${tv(imageURL)}" alt="${escapeHTML(studentName(item.studentId))}机制图大图" data-mechanism-image="preview" loading="eager" />`
+          : '<div class="mechanism-placeholder large">暂无机制图<br><span>编辑该学生的硕士课题，填写部署后可访问的图片 URL</span></div>'}
+      </div>
+    </div>
   `;
 }
 
@@ -1734,23 +1773,16 @@ function renderSuggestionCard(item) {
       <h3>${tv(item.title)}</h3>
       <p><strong>说明</strong><br>${tv(item.gap)}</p>
       <p><strong>价值</strong><br>${tv(item.value)}</p>
-      <p><strong>起步</strong><br>${tv(item.start)}</p>
+      <p><strong>如何起步</strong><br>${tv(item.start)}</p>
     </article>
   `;
 }
 
-/* ── 档案扫描 ── */
+/* ── 进展档案中的材料扫描区 ── */
 
-function renderArchive() {
+function renderArchivePanels() {
   const scans = state.archiveScans || [];
-  $("#archiveView").innerHTML = tr(`
-    <div class="toolbar">
-      <input id="archiveSearch" type="search" placeholder="搜索学生、文件或检查点" />
-      <div class="toolbar-actions">
-        <button class="primary-button" type="button" data-action="scan-archive">扫描学生档案文件夹</button>
-        <span class="tag ok">${tv(state.settings?.lastArchiveScanAt || "未扫描")}</span>
-      </div>
-    </div>
+  return `
     <div class="grid two-col">
       <div class="panel">
         <div class="panel-head">
@@ -1774,10 +1806,11 @@ function renderArchive() {
       </div>
     </div>
     ${renderUnmatchedFolders()}
-  `);
+  `;
 }
 
 function renderUnmatchedFolders() {
+  if (!API.isPI) return "";
   const unmatched = state.settings?.unmatchedFolders || [];
   if (!unmatched.length) return "";
   return `
@@ -1812,7 +1845,7 @@ function renderUnmatchedFolders() {
 function renderArchiveRow(scan) {
   const text = `${studentName(scan.studentId)} ${scan.files.join(" ")} ${scan.summary} ${scan.check}`;
   return `
-    <article class="list-row searchable" data-text="${escapeHTML(text)}">
+    <article class="list-row searchable" data-student="${escapeHTML(scan.studentId)}" data-text="${escapeHTML(text)}">
       <div class="row-head">
         <div>
           <h3>${studentNameHTML(scan.studentId)} <span class="tag violet">${tv(scan.version)}</span></h3>
@@ -2054,11 +2087,16 @@ function renderDuties() {
 /* ── 周进展 ── */
 
 function renderWeekly() {
-  const drafts = state.weeklyDrafts || [];
+  const drafts = API.isPI ? (state.weeklyDrafts || []) : [];
   $("#weeklyView").innerHTML = tr(`
     <div class="toolbar">
+      <input id="progressSearch" type="search" placeholder="搜索学生、进展、文件或检查点" />
       <select id="weeklyStudentFilter"><option value="">全部学生</option>${optionStudents()}</select>
-      <button class="primary-button" type="button" data-action="add-weekly">记录周进展</button>
+      <div class="toolbar-actions">
+        <button class="primary-button" type="button" data-action="add-weekly">记录周进展</button>
+        ${API.isPI ? '<button class="small-button" type="button" data-action="scan-archive">扫描学生档案文件夹</button>' : ""}
+        <span class="tag ok">${tv(state.settings?.lastArchiveScanAt || "未扫描")}</span>
+      </div>
     </div>
     ${drafts.length ? `
       <div class="panel review-panel" style="margin-bottom: 14px;">
@@ -2066,9 +2104,13 @@ function renderWeekly() {
         <div class="list">${drafts.map(renderWeeklyDraftRow).join("")}</div>
       </div>
     ` : ""}
-    <div class="list">
-      ${state.weeklyLogs.sort((a, b) => b.weekOf.localeCompare(a.weekOf)).map(renderWeeklyRow).join("") || emptyHTML()}
+    <div class="panel" style="margin-bottom: 14px;">
+      <div class="panel-head"><h2>正式周进展</h2><span class="tag blue">${state.weeklyLogs.length} 条</span></div>
+      <div class="list">
+        ${state.weeklyLogs.sort((a, b) => b.weekOf.localeCompare(a.weekOf)).map(renderWeeklyRow).join("") || emptyHTML()}
+      </div>
     </div>
+    ${renderArchivePanels()}
   `);
 }
 
@@ -2107,7 +2149,7 @@ function renderWeeklyRow(log) {
           <div class="meta"><span class="tag ${scoreClass}">产出 ${Number(log.outputScore) || 0}/5</span><span>${daysBetween(log.weekOf)} 天前</span></div>
         </div>
         <button class="small-button" type="button" data-action="edit-weekly" data-id="${escapeHTML(log.id)}">编辑</button>
-        <button class="small-button danger-button" type="button" data-action="delete-weekly" data-id="${escapeHTML(log.id)}">删除</button>
+        ${API.isPI ? `<button class="small-button danger-button" type="button" data-action="delete-weekly" data-id="${escapeHTML(log.id)}">删除</button>` : ""}
       </div>
       <div class="grid three-col">
         <p><strong>实验</strong><br>${escapeHTML(log.experiment)}</p>
@@ -2587,6 +2629,176 @@ function renderFinanceRecordRow(record) {
   `;
 }
 
+/* ── 科研自动化 ── */
+
+function automationStepTemplate() {
+  return [
+    { id: "raw", label: "原始数据", status: "等待", owner: "学生", input: "实验仪器原始文件、Excel、CSV、图片或记录表", output: "原始数据路径、样品编号、分组信息和实验条件说明", note: "先保证样品命名、重复数和实验条件说清楚。" },
+    { id: "clean", label: "数据清洗", status: "等待", owner: "AI + 学生复核", input: "原始数据和分组表", output: "清洗后的 tidy data、异常值记录、单位换算和缺失值处理说明", note: "检查样品名、空白值、重复数、单位、离群点和统计分组。" },
+    { id: "plot", label: "图表制作", status: "等待", owner: "AI", input: "清洗后的数据", output: "论文图、诊断图和作图参数", note: "图表必须能回到清洗数据和作图参数。" },
+    { id: "stats", label: "统计分析", status: "等待", owner: "AI + 学生复核", input: "清洗数据和实验设计", output: "检验结果、模型结果、统计说明和图注标记", note: "统计方法由实验设计决定，不能让系统自行猜测。" },
+    { id: "result", label: "结果分析", status: "等待", owner: "AI 初稿", input: "图表、统计结果和实验目的", output: "结果段落、关键趋势和异常现象", note: "结果段只写数据事实和趋势，不提前混入机制讨论。" },
+    { id: "discussion", label: "讨论撰写", status: "等待", owner: "AI + 导师", input: "结果段落、文献线索和机制假设", output: "讨论段落、机制解释、文献对照和局限性", note: "引用必须可回查，机制判断必须和证据强度一致。" },
+    { id: "review", label: "导师审核", status: "等待", owner: "导师", input: "清洗表、图、统计、结果和讨论草稿", output: "修改意见、返工节点和确认版本", note: "导师决定是否进入周报、论文或成果展板。" },
+  ];
+}
+
+function automationStats() {
+  const pipelines = state.automationPipelines || [];
+  const steps = pipelines.flatMap((pipeline) => pipeline.steps || []);
+  return {
+    active: pipelines.filter((item) => ["进行中", "返工", "起步"].includes(item.status)).length,
+    waitingData: pipelines.filter((item) => item.status === "等待数据").length,
+    doneSteps: steps.filter((step) => step.status === "完成").length,
+    totalSteps: steps.length,
+  };
+}
+
+function renderAutomation() {
+  const pipelines = state.automationPipelines || [];
+  const stats = automationStats();
+  $("#automationView").innerHTML = tr(`
+    <div class="toolbar">
+      <input id="automationSearch" type="search" placeholder="搜索学生、实验、数据类型或问题" />
+      <div class="toolbar-actions">
+        <select id="automationStatusFilter">
+          <option value="">全部状态</option>
+          <option value="等待数据">等待数据</option>
+          <option value="起步">起步</option>
+          <option value="进行中">进行中</option>
+          <option value="返工">返工</option>
+          <option value="完成">完成</option>
+        </select>
+        <button class="primary-button" type="button" data-action="add-automation">新增流程</button>
+      </div>
+    </div>
+    <div class="grid kpi-grid">
+      ${kpi("自动化流程", pipelines.length, "已建实验任务")}
+      ${kpi("进行中", stats.active, "正在处理")}
+      ${kpi("等待数据", stats.waitingData, "学生需补材料")}
+      ${kpi("已完成节点", `${stats.doneSteps}/${stats.totalSteps}`, "流程产出")}
+    </div>
+    <div class="panel automation-intro" style="margin-top: 14px;">
+      <div class="panel-head"><h2>标准自动化链条</h2><span class="tag blue">数据到论文段落</span></div>
+      <div class="automation-template">
+        ${automationStepTemplate().map((step, index) => `
+          <div class="template-step"><span>${index + 1}</span><strong>${tv(step.label)}</strong></div>
+        `).join("")}
+      </div>
+    </div>
+    <div class="list" style="margin-top: 14px;">
+      ${pipelines.map(renderAutomationPipeline).join("") || emptyHTML()}
+    </div>
+  `);
+}
+
+function renderAutomationPipeline(pipeline) {
+  const progress = automationProgress(pipeline);
+  const current = currentAutomationStep(pipeline);
+  const searchable = `${studentName(pipeline.studentId)} ${pipeline.experimentName} ${pipeline.sampleType} ${pipeline.rawDataPath} ${pipeline.researchQuestion} ${pipeline.method} ${pipeline.status}`;
+  return `
+    <article class="automation-card searchable" data-status="${escapeHTML(pipeline.status)}" data-text="${escapeHTML(searchable)}">
+      <div class="row-head">
+        <div>
+          <h3>${escapeHTML(pipeline.experimentName)}</h3>
+          <div class="meta"><span>${studentNameHTML(pipeline.studentId)}</span><span>${escapeHTML(pipeline.sampleType)}</span><span>截止 ${pipeline.dueDate ? escapeHTML(pipeline.dueDate) : tv("待定")}</span></div>
+        </div>
+        <div class="row-actions">
+          <span class="tag ${automationStatusClass(pipeline.status)}">${tv(pipeline.status)}</span>
+          <span class="tag ${pipeline.priority === "高" ? "danger" : pipeline.priority === "中" ? "warn" : "blue"}">${tv(pipeline.priority || "中")} 优先级</span>
+          <button class="small-button" type="button" data-action="advance-automation" data-id="${escapeHTML(pipeline.id)}">推进一步</button>
+          <button class="small-button" type="button" data-action="edit-automation" data-id="${escapeHTML(pipeline.id)}">编辑</button>
+          ${API.isPI ? `<button class="small-button danger-button" type="button" data-action="delete-automation" data-id="${escapeHTML(pipeline.id)}">删除</button>` : ""}
+        </div>
+      </div>
+      <div class="automation-summary">
+        <div><strong>研究问题</strong><p>${pipeline.researchQuestion ? escapeHTML(pipeline.researchQuestion) : tv("待补充")}</p></div>
+        <div><strong>原始数据</strong><p>${pipeline.rawDataPath ? escapeHTML(pipeline.rawDataPath) : tv("待学生补充")} · ${pipeline.dataFormat ? escapeHTML(pipeline.dataFormat) : tv("格式待定")}</p></div>
+        <div><strong>当前节点</strong><p>${current ? `${tv(current.label)}：${current.note ? escapeHTML(current.note) : tv("待补充")}` : "全部节点完成，等待最终归档。"}</p></div>
+      </div>
+      <div class="progress-track"><div class="progress-bar" style="width:${progress}%"></div></div>
+      <div class="automation-steps">
+        ${(pipeline.steps || []).map((step, index) => renderAutomationStep(pipeline, step, index)).join("")}
+      </div>
+      <p class="meta">方法路线：${pipeline.method ? escapeHTML(pipeline.method) : tv("待补充")}</p>
+    </article>
+  `;
+}
+
+function renderAutomationStep(pipeline, step, index) {
+  return `
+    <button class="automation-step ${step.status === "完成" ? "done" : step.status === "进行中" ? "active" : step.status === "返工" ? "rework" : ""}" type="button" data-action="edit-automation-step" data-id="${escapeHTML(`${pipeline.id}::${step.id}`)}">
+      <span class="step-index">${index + 1}</span><strong>${tv(step.label)}</strong><em>${tv(step.status)}</em>
+    </button>
+  `;
+}
+
+function automationProgress(pipeline) {
+  const steps = pipeline.steps || [];
+  return steps.length ? Math.round((steps.filter((step) => step.status === "完成").length / steps.length) * 100) : 0;
+}
+
+function currentAutomationStep(pipeline) {
+  return (pipeline.steps || []).find((step) => ["进行中", "返工"].includes(step.status))
+    || (pipeline.steps || []).find((step) => step.status === "等待");
+}
+
+function automationStatusClass(status) {
+  if (status === "完成") return "ok";
+  if (status === "进行中") return "blue";
+  if (status === "等待数据" || status === "返工") return "warn";
+  if (status === "起步") return "violet";
+  return "";
+}
+
+/* ── NATURE Skills ── */
+
+function renderNatureSkill() {
+  $("#natureSkillView").innerHTML = tr(`
+    <div class="panel nature-hero">
+      <div>
+        <span class="tag ok">开源 · Apache-2.0</span>
+        <h2>NATURE Skills 科研技能库</h2>
+        <p>它是一组给科研 Agent 使用的开源技能，不是浏览器插件。本模块把上游来源、使用边界和实验工作流放进同一个入口，不复制上游代码，也不向上游发送课题组数据。</p>
+      </div>
+      <div class="nature-source">
+        <strong>上游仓库</strong>
+        <a href="https://github.com/Yuan1z0825/nature-skills" target="_blank" rel="noopener noreferrer">github.com/Yuan1z0825/nature-skills</a>
+        <span>上游许可：Apache-2.0 · Lab-Bench：MIT</span>
+      </div>
+    </div>
+    <div class="grid two-col" style="margin-top: 14px;">
+      <div class="panel">
+        <div class="panel-head"><h2>获取与更新</h2><span class="tag blue">学生电脑</span></div>
+        <div class="command-card"><strong>获取上游源码</strong><code>git clone https://github.com/Yuan1z0825/nature-skills.git</code></div>
+        <div class="command-card"><strong>更新上游版本</strong><code>git -C nature-skills pull --ff-only</code></div>
+        <p class="meta">安装位置和可用技能会随 Agent 改变，请以仓库 README 为准。升级前先看变更记录，不要把原始数据、合同或个人信息提交到公开仓库。</p>
+      </div>
+      <div class="panel nature-guardrail">
+        <div class="panel-head"><h2>组内使用边界</h2><span class="tag warn">导师审核</span></div>
+        <div class="issue-list">
+          <div class="issue"><strong>证据可回看</strong><p>原始数据、清洗日志、统计方法、图表脚本和引用来源必须保留。</p></div>
+          <div class="issue"><strong>结果与讨论分开</strong><p>结果段只写数据事实；讨论段再解释机制、局限和与文献的关系。</p></div>
+          <div class="issue"><strong>AI 不代替科研责任</strong><p>图表真实性、机制判断、引用准确性和投稿伦理仍由学生与导师负责。</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="grid three-col nature-card-grid" style="margin-top: 14px;">
+      <article class="nature-card"><span class="tag violet">idea</span><h3>文献到课题</h3><p>把论文、综述和研究空白整理成可讨论的实验问题。</p><strong>对应研讨看板与硕士课题</strong></article>
+      <article class="nature-card"><span class="tag violet">writing</span><h3>论文写作</h3><p>辅助摘要、结果、讨论和回复审稿意见的结构化表达。</p><strong>对应科研自动化与成果展板</strong></article>
+      <article class="nature-card"><span class="tag violet">figure</span><h3>图表与展示</h3><p>规范科研图表和机制图表达，同时保留数据、脚本和版本记录。</p><strong>对应进展档案与组会讨论</strong></article>
+    </div>
+    <div class="panel nature-workflow" style="margin-top: 14px;">
+      <div class="panel-head"><h2>统一工作流</h2><span class="tag blue">只回写确认结果</span></div>
+      <div class="workflow-steps">
+        <div><span>1</span><strong>科研自动化</strong><p>登记实验、原始数据位置、当前节点和导师审核点。</p></div>
+        <div><span>2</span><strong>NATURE Skills</strong><p>在 Agent 中完成文献、图表、写作或审稿回复辅助。</p></div>
+        <div><span>3</span><strong>成果展板</strong><p>只登记导师确认后的产出、DOI、投稿状态和成果证明。</p></div>
+      </div>
+    </div>
+  `);
+}
+
 /* ── 数据设置 ── */
 
 const EXPORT_WARN_DAYS = 14;
@@ -3046,6 +3258,7 @@ function topicForm(topic = {}) {
       field("progress", "进度百分比", "number", topic.progress || 0),
       field("risk", "风险", "select", topic.risk || "低", "", [["低", "低"], ["中", "中"], ["高", "高"]]),
       field("nextReview", "下次复盘", "date", topic.nextReview || todayISO()),
+      field("mechanismImage", "机制图图片 URL", "url", topic.mechanismImage || topic.mechanismImageUrl || "", "部署后可访问的 http/https 图片地址（可选）"),
       field("plan", "整体规划", "textarea", topic.plan || ""),
       field("experiments", "实验进展", "textarea", topic.experiments || ""),
       field("literature", "文献库", "textarea", topic.literature || ""),
@@ -3209,6 +3422,64 @@ function financeForm(record = {}) {
   );
 }
 
+function automationForm(pipeline = {}) {
+  openModal(
+    pipeline.id ? "编辑科研自动化流程" : "新增科研自动化流程",
+    [
+      studentSelectField("studentId", "学生", pipeline.studentId || state.students[0]?.id),
+      field("experimentName", "实验名称", "text", pipeline.experimentName || ""),
+      field("status", "状态", "select", pipeline.status || "等待数据", "", [["等待数据", "等待数据"], ["起步", "起步"], ["进行中", "进行中"], ["返工", "返工"], ["完成", "完成"]]),
+      field("priority", "优先级", "select", pipeline.priority || "中", "", [["高", "高"], ["中", "中"], ["低", "低"]]),
+      field("dueDate", "截止日期", "date", pipeline.dueDate || dateOffset(7)),
+      field("sampleType", "数据/样品类型", "text", pipeline.sampleType || ""),
+      field("dataFormat", "数据格式", "text", pipeline.dataFormat || "XLSX/CSV/JPG/TIF/DOCX"),
+      field("rawDataPath", "原始数据路径", "textarea", pipeline.rawDataPath || "", "学生档案中的文件夹或服务器路径"),
+      field("researchQuestion", "研究问题", "textarea", pipeline.researchQuestion || ""),
+      field("method", "自动化方法路线", "textarea", pipeline.method || ""),
+    ].join(""),
+    (values) => {
+      let steps = pipeline.steps;
+      if (!Array.isArray(steps) || !steps.length) {
+        steps = automationStepTemplate();
+        if (values.rawDataPath) {
+          steps = steps.map((step, index) => ({
+            ...step,
+            status: index === 0 ? "完成" : index === 1 ? "进行中" : "等待",
+          }));
+        }
+      }
+      upsert("automationPipelines", {
+        ...pipeline,
+        ...values,
+        steps,
+        createdAt: pipeline.createdAt || todayISO(),
+        id: pipeline.id || uid("auto"),
+      });
+    }
+  );
+}
+
+function automationStepForm(pipelineId, stepId) {
+  const pipeline = (state.automationPipelines || []).find((item) => item.id === pipelineId);
+  const step = pipeline?.steps?.find((item) => item.id === stepId);
+  if (!pipeline || !step) return;
+  openModal(
+    `编辑节点：${step.label}`,
+    [
+      field("status", "节点状态", "select", step.status || "等待", "", [["等待", "等待"], ["进行中", "进行中"], ["完成", "完成"], ["返工", "返工"]]),
+      field("owner", "负责人", "text", step.owner || ""),
+      field("input", "输入材料", "textarea", step.input || ""),
+      field("output", "输出产物", "textarea", step.output || ""),
+      field("note", "节点说明/返工意见", "textarea", step.note || ""),
+    ].join(""),
+    (values) => {
+      pipeline.steps = pipeline.steps.map((item) => item.id === stepId ? { ...item, ...values } : item);
+      pipeline.status = inferAutomationPipelineStatus(pipeline);
+      upsert("automationPipelines", pipeline);
+    }
+  );
+}
+
 /* ── 操作路由 ── */
 
 function handleAction(action, id) {
@@ -3224,6 +3495,14 @@ function handleAction(action, id) {
   if (action === "add-finance") financeForm();
   if (action === "edit-finance") financeForm(financeRecords().find((item) => item.id === id));
   if (action === "delete-finance") deleteFinanceRecord(id);
+  if (action === "add-automation") automationForm();
+  if (action === "edit-automation") automationForm((state.automationPipelines || []).find((item) => item.id === id));
+  if (action === "delete-automation") deleteAutomation(id);
+  if (action === "advance-automation") advanceAutomation(id);
+  if (action === "edit-automation-step") {
+    const [pipelineId, stepId] = String(id || "").split("::");
+    automationStepForm(pipelineId, stepId);
+  }
   if (action === "attach-file") attachFilesTo(id);
   if (action === "remove-attachment") removeAttachment(id);
   if (action === "add-topic") topicForm();
@@ -3250,6 +3529,10 @@ function handleAction(action, id) {
   if (action === "delete-weekly-draft") deleteWeeklyDraft(id);
   if (action === "select-graph") {
     selectedGraphStudent = id;
+    renderDiscussion();
+  }
+  if (action === "select-mechanism") {
+    selectedMechanismStudent = id;
     renderDiscussion();
   }
   if (action === "close-modal") closeModal();
@@ -3302,7 +3585,7 @@ function handleAction(action, id) {
 function deleteStudent(id) {
   const student = state.students.find((item) => item.id === id);
   if (!student) return;
-  if (!confirm(t(`删除 ${student.name}？相关课题、周报、事务、成果、费用和爬虫记录将一并删除。`))) return;
+  if (!confirm(t(`删除 ${student.name}？相关课题、周报、事务、成果、费用、爬虫和科研自动化记录将一并删除。`))) return;
   state.students = state.students.filter((item) => item.id !== id);
   state.topics = state.topics.filter((item) => item.studentId !== id);
   state.weeklyLogs = state.weeklyLogs.filter((item) => item.studentId !== id);
@@ -3312,6 +3595,7 @@ function deleteStudent(id) {
   state.archiveScans = (state.archiveScans || []).filter((item) => item.studentId !== id);
   state.achievements = achievementRecords().filter((item) => item.studentId !== id);
   state.financeRecords = financeRecords().filter((item) => item.studentId !== id);
+  state.automationPipelines = (state.automationPipelines || []).filter((item) => item.studentId !== id);
   saveState();
   render();
 }
@@ -3341,6 +3625,43 @@ function deleteFinanceRecord(id) {
   state.financeRecords = financeRecords().filter((record) => record.id !== id);
   saveState();
   render();
+}
+
+function deleteAutomation(id) {
+  const pipeline = (state.automationPipelines || []).find((item) => item.id === id);
+  if (!pipeline || !API.isPI) return;
+  if (!confirm(t(`删除科研自动化流程"${pipeline.experimentName}"？`))) return;
+  state.automationPipelines = state.automationPipelines.filter((item) => item.id !== id);
+  saveState();
+  render();
+}
+
+function advanceAutomation(id) {
+  const pipeline = (state.automationPipelines || []).find((item) => item.id === id);
+  if (!pipeline) return;
+  const steps = pipeline.steps || [];
+  const activeIndex = steps.findIndex((step) => ["进行中", "返工"].includes(step.status));
+  const waitingIndex = steps.findIndex((step) => step.status === "等待");
+  const index = activeIndex >= 0 ? activeIndex : waitingIndex;
+  if (index < 0) {
+    pipeline.status = "完成";
+  } else {
+    steps[index] = { ...steps[index], status: "完成" };
+    if (steps[index + 1]) steps[index + 1] = { ...steps[index + 1], status: "进行中" };
+    pipeline.status = inferAutomationPipelineStatus(pipeline);
+  }
+  upsert("automationPipelines", pipeline);
+  setSyncStatus("saving");
+  saveState().then((saved) => { if (saved) render(); });
+}
+
+function inferAutomationPipelineStatus(pipeline) {
+  const steps = pipeline.steps || [];
+  if (steps.length && steps.every((step) => step.status === "完成")) return "完成";
+  if (steps.some((step) => step.status === "返工")) return "返工";
+  if (steps.some((step) => step.status === "进行中")) return "进行中";
+  if (!pipeline.rawDataPath) return "等待数据";
+  return "起步";
 }
 
 function deleteTopic(id) {
@@ -4440,6 +4761,16 @@ function attachEvents() {
     }
   });
 
+  /* 外部图片地址可能过期或填错，失败时退回可读占位，不把破图图标留在展板上。 */
+  document.body.addEventListener("error", (event) => {
+    const image = event.target;
+    if (!(image instanceof HTMLImageElement) || !image.dataset.mechanismImage) return;
+    const placeholder = document.createElement("div");
+    placeholder.className = `mechanism-placeholder${image.dataset.mechanismImage === "preview" ? " large" : ""}`;
+    placeholder.textContent = t("机制图加载失败，请检查图片地址。");
+    image.replaceWith(placeholder);
+  }, true);
+
   $("#modalClose").addEventListener("click", closeModal);
   $("#modal").addEventListener("click", (event) => {
     if (event.target.id === "modal") closeModal();
@@ -4454,7 +4785,7 @@ function attachEvents() {
   });
 
   document.body.addEventListener("input", (event) => {
-    const searchInputs = ["studentSearch", "alumniSearch", "industrySearch", "archiveSearch", "leadSearch", "crawlerSearch", "achievementSearch", "fundingSearch"];
+    const searchInputs = ["studentSearch", "alumniSearch", "industrySearch", "progressSearch", "leadSearch", "crawlerSearch", "achievementSearch", "fundingSearch", "automationSearch"];
     if (searchInputs.includes(event.target.id)) {
       filterText(event.target.value, event.target.closest(".view"));
     }
@@ -4467,6 +4798,7 @@ function attachEvents() {
     if (event.target.id === "alumniDestinationFilter") filterScopedAttr("#alumniView", "data-destination", event.target.value);
     if (event.target.id === "achievementStatusFilter") filterScopedAttr("#achievementsView", "data-status", event.target.value);
     if (event.target.id === "fundingCategoryFilter") filterScopedAttr("#fundingView", "data-category", event.target.value);
+    if (event.target.id === "automationStatusFilter") filterScopedAttr("#automationView", "data-status", event.target.value);
     if (event.target.id === "importFileInput") importDataFromFile(event.target.files?.[0]);
   });
 
@@ -4613,7 +4945,7 @@ function initIntroSplash() {
    index.html 里的静态文案（侧边栏、开屏动画、空状态模板、顶部按钮）不经过
    render()，所以先把中文原文存下来，每次切换语言拿原文重新翻译一遍。 */
 
-const STATIC_I18N_NODES = [".sidebar", ".intro-splash", "#emptyTemplate", ".top-actions"];
+const STATIC_I18N_NODES = [".sidebar", ".intro-splash", ".auth-gate", "#emptyTemplate", ".top-actions"];
 const staticOriginals = new Map();
 
 function captureStaticOriginals() {
@@ -4683,7 +5015,7 @@ function renderIdentity() {
 /* 学生看不到横向、经费、账号这些模块。这只是界面收敛，
    真正的门在服务端——前端把按钮改出来也拿不到数据。 */
 const PI_ONLY_VIEWS = new Set([
-  "industry", "leads", "funding", "archive", "crawler", "alumni", "settings",
+  "industry", "leads", "funding", "crawler", "alumni", "settings",
   "contracts",
 ]);
 

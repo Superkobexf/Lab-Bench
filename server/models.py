@@ -105,6 +105,7 @@ class SettingsIn(Strict):
     stipendRate: Optional[float] = Field(default=None, ge=0, le=100000)
     lastExportAt: Optional[str] = Field(default=None, max_length=32)
     lastArchiveScanAt: Optional[str] = Field(default=None, max_length=64)
+    unmatchedFolders: Optional[List[Dict[str, Any]]] = Field(default=None, max_length=100)
 
 
 # ── 功能一：目标 / 计划 / 批注 ──────────────────────────────

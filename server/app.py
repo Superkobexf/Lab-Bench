@@ -329,8 +329,8 @@ def put_record(
     scope = student_scope(session)
     owner = _student_of(collection, body.payload, fallback=record_id)
     if scope is not None:
-        # 学生只能改自己的周进展；其余集合一律只读
-        if collection != "weeklyLogs":
+        # 学生可以维护自己的周进展和科研自动化流程；其余集合一律只读
+        if collection not in {"weeklyLogs", "automationPipelines"}:
             raise HTTPException(403, "没有权限修改这条记录。")
         # 归属必须以库里已有的那条为准。只看请求体里声称的 studentId，
         # 学生就能 PUT 到别人的记录 id 上、把 studentId 填成自己，
@@ -343,7 +343,7 @@ def put_record(
             raise HTTPException(403, "没有权限修改这条记录。")
         # 也不能把新记录挂到别人名下
         if owner != scope:
-            raise HTTPException(403, "只能提交自己的周进展。")
+            raise HTTPException(403, "只能提交自己的记录。")
     payload = dict(body.payload)
     payload.pop("id", None)
     now = auth.now_iso()

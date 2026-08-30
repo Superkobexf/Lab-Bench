@@ -72,14 +72,15 @@ It ships with a small set of sample data (one student, one project, a weekly log
 | **毕业学生** Alumni | 毕业去向、现任职位、联系方式——课题组自己的校友网络 | Where graduates went, current roles, contacts — your group's own alumni network |
 | **硕士课题** Projects | 整体规划、实验进展、文献库、数据分析、进度和风险 | Plan, experiments, literature, data analysis, progress and risk |
 | **研讨看板** Discussion | 按课题关键词生成知识图谱，机制图讨论区 | Keyword graph generated from each project, plus a space for mechanism diagrams |
-| **档案扫描** File Scan | 授权选择学生档案文件夹，自动识别新增文件并解析内容 | Point it at a student's folder; it finds new files and reads their contents |
 | **横向课题** Industry | 合作单位、合作老师、学生分工和交付物 | Partner organisations, contacts, student assignments and deliverables |
 | **合作线索** Leads | 企业、科研院所、大学等外部合作与学生发展机会跟踪 | Long-term tracking of external contacts and career openings for students |
 | **AI 爬虫** Paper Radar | 按课题检索词从 OpenAlex、Crossref、Europe PMC 抓近 30 天新论文 | Pulls papers from the last 30 days out of OpenAlex, Crossref and Europe PMC |
 | **课题组事务** Group Duties | 事务量、小时数、积分和状态，可作为劳务费依据 | Who did what, hours, points and status — a basis for allocating stipends |
-| **周进展** Weekly Logs | 每周记录实验、数据、文献、卡点、下周计划和导师反馈 | Experiments, data, literature, blockers, next-week plan and your feedback |
+| **进展档案** Progress Archive | 周进展、候选稿、材料扫描和导师检查点合并展现 | Weekly logs, drafts, file scans and supervisor checkpoints in one view |
 | **成果展板** Output Board | SCI、投稿、论文草稿的公开统计，形成正向压力 | Papers, submissions and drafts per student, shown openly |
 | **经费投入** Spending | 耗材、检测、版面费、补助，以及每 IF 投入的产出比 | Reagents, instrument time, publication fees, stipends and cost per unit of output |
+| **科研自动化** Research Automation | 原始数据、清洗、图表、统计、结果、讨论和导师审核的可视化流程 | A visible pipeline from raw data through cleaning, figures, statistics, writing and supervisor review |
+| **NATURE Skills** | 开源科研技能库的来源、安装提示、使用边界和组内工作流入口 | Source, setup guidance, boundaries and lab workflow for the open-source research skill library |
 | **数据** Data | 导入导出 JSON 备份、账号管理、规则设置 | JSON export/import, account management and settings |
 
 ## 界面预览 · A look at it
@@ -136,17 +137,25 @@ PDF extraction is written from scratch with no dependencies (inflating FlateDeco
 
 **Digital contracts need no OCR at all.** The server reads the PDF text layer and docx body first, so anything exported from Word or produced by an e-signature platform parses directly. OCR is only for scans and photos — and when no OCR engine is installed the app says so plainly rather than pretending it found no dates.
 
+**科研自动化保存流程，不假装替你做完科研。** 学生可以登记自己的原始数据位置并维护流程节点，导师可以查看全组、给出返工意见并确认是否进入论文或成果展板。原始数据、清洗日志、统计依据、图表脚本和引用仍应保存在可回看的研究目录中。
+
+**Research Automation stores the workflow; it does not pretend to complete the science for you.** Students can maintain their own data location and pipeline steps, while the supervisor can review the whole group, request rework and decide what is ready for a paper or the Output Board. Raw data, cleaning logs, statistical rationale, figure scripts and citations should remain in a reviewable research directory.
+
+**NATURE Skills 以外部开源项目接入。** 上游仓库是 `Yuan1z0825/nature-skills`，采用 Apache-2.0；Lab-Bench 只提供入口、边界和工作流说明，不打包上游代码，也不会自动上传课题组数据。安装和更新前请阅读上游 README 与变更记录。
+
+**NATURE Skills is linked as an external open-source project.** The upstream `Yuan1z0825/nature-skills` repository uses Apache-2.0. Lab-Bench provides the entry point, boundaries and workflow guidance without bundling upstream code or automatically uploading lab data. Read the upstream README and changes before installing or updating.
+
 ## 数据与隐私 · Data and privacy
 
 数据保存在**你自己部署的那台服务器**上，不经过任何第三方。存的内容包括：学生和校友的姓名、年级、联系方式（含微信、邮箱）、课题与周进展、经费记录，以及你上传的横向合同原件和从中抽取的日期与金额。学生账号只能看到自己的那部分，这个限制在服务端强制，不是前端藏按钮。
 
-唯一的对外联网是"AI 爬虫"模块调用公开论文索引 API（OpenAlex、Crossref、Europe PMC），不需要注册账号，也不会上传你的数据。扫描件 OCR 在**你自己的服务器上**跑，合同不会发给任何云服务。
+唯一会自动对外联网的功能是"AI 爬虫"模块调用公开论文索引 API（OpenAlex、Crossref、Europe PMC），不需要注册账号，也不会上传你的数据。NATURE Skills 页面只有一个手动打开的 GitHub 链接；扫描件 OCR 在**你自己的服务器上**跑，合同不会发给任何云服务。
 
 因为存了在校学生和校友的个人信息，请按《个人信息保护法》的要求处理：只收集必要信息，告知学生存了什么，离组后按需删除。
 
 Data lives on **the server you deploy**, and passes through no third party. That includes student and alumni names, year, contact details (WeChat, email), projects and weekly logs, spending records, plus any industry contracts you upload and the dates and amounts extracted from them. Student accounts only ever see their own slice, enforced server-side rather than by hiding buttons in the UI.
 
-The only outbound traffic is the Paper Radar module calling public paper indexes (OpenAlex, Crossref, Europe PMC) — no account, no data uploaded. OCR for scanned contracts runs **on your own server**; contracts are never sent to a cloud service.
+The only automatic outbound traffic is Paper Radar calling public indexes (OpenAlex, Crossref, Europe PMC) — no account and no data uploaded. The NATURE Skills page contains only a manually opened GitHub link. OCR for scanned contracts runs **on your own server**; contracts are never sent to a cloud service.
 
 Because this stores personal information about current students and alumni, handle it accordingly: collect only what you need, tell students what is stored, and delete records when people leave.
 

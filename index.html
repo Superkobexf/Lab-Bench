@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>课题组管理台</title>
-    <link rel="stylesheet" href="./styles.css?v=generic-v10" />
+    <link rel="stylesheet" href="./styles.css?v=lab-bench-v11" />
   </head>
   <body>
     <div id="introSplash" class="intro-splash hidden" aria-live="polite" aria-label="课题组管理台开屏动画">
@@ -103,15 +103,16 @@
           <button class="nav-item" data-view="alumni">毕业学生</button>
           <button class="nav-item" data-view="topics">硕士课题</button>
           <button class="nav-item" data-view="discussion">研讨看板</button>
-          <button class="nav-item" data-view="archive">档案扫描</button>
           <button class="nav-item" data-view="industry">横向课题</button>
           <button class="nav-item" data-view="leads">合作线索</button>
           <button class="nav-item" data-view="contracts">合同管理</button>
           <button class="nav-item" data-view="crawler">AI 爬虫</button>
           <button class="nav-item" data-view="duties">课题组事务</button>
-          <button class="nav-item" data-view="weekly">周进展</button>
+          <button class="nav-item" data-view="weekly">进展档案</button>
           <button class="nav-item" data-view="achievements">成果展板</button>
           <button class="nav-item" data-view="funding">经费投入</button>
+          <button class="nav-item" data-view="automation">科研自动化</button>
+          <button class="nav-item" data-view="natureSkill">NATURE Skills</button>
           <button class="nav-item" data-view="settings">数据</button>
         </nav>
         <div class="sidebar-foot">
@@ -148,7 +149,6 @@
         <section id="alumniView" class="view"></section>
         <section id="topicsView" class="view"></section>
         <section id="discussionView" class="view"></section>
-        <section id="archiveView" class="view"></section>
         <section id="industryView" class="view"></section>
         <section id="leadsView" class="view"></section>
         <section id="crawlerView" class="view"></section>
@@ -156,6 +156,8 @@
         <section id="weeklyView" class="view"></section>
         <section id="achievementsView" class="view"></section>
         <section id="fundingView" class="view"></section>
+        <section id="automationView" class="view"></section>
+        <section id="natureSkillView" class="view"></section>
         <section id="settingsView" class="view"></section>
       </main>
     </div>
@@ -215,8 +217,8 @@
       </div>
     </template>
 
-    <script src="./i18n.js?v=generic-v10"></script>
-    <script src="./api.js?v=generic-v10"></script>
-    <script src="./app.js?v=generic-v10" defer></script>
+    <script src="./i18n.js?v=lab-bench-v11"></script>
+    <script src="./api.js?v=lab-bench-v11"></script>
+    <script src="./app.js?v=lab-bench-v11" defer></script>
   </body>
 </html>

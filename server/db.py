@@ -1,6 +1,6 @@
 """SQLite schema and connection handling.
 
-设计取舍：现有前端的 13 个数据集合（students / topics / weeklyLogs ...）
+设计取舍：现有前端的数据集合（students / topics / weeklyLogs ...）
 不拆成关系表，而是统一存进 records 表的 payload JSON 列，只把鉴权和筛选
 真正需要的字段（collection / id / student_id / updated_at）提成真实列。
 
@@ -39,6 +39,7 @@ COLLECTIONS = (
     "archiveScans",
     "achievements",
     "financeRecords",
+    "automationPipelines",
 )
 
 SCHEMA = """

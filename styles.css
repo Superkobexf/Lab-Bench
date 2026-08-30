@@ -1026,6 +1026,22 @@ h1 {
   gap: 14px;
 }
 
+.mechanism-viewer {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.3fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.mechanism-thumbs {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  max-height: min(720px, 68vh);
+  overflow: auto;
+  padding-right: 2px;
+}
+
 .mechanism-card,
 .suggestion-card {
   display: grid;
@@ -1036,12 +1052,76 @@ h1 {
   padding: 12px;
 }
 
+.mechanism-card {
+  width: 100%;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.mechanism-card:hover,
+.mechanism-card:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.mechanism-card.active-mechanism {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
 .mechanism-card img {
   width: 100%;
   aspect-ratio: 4 / 3;
   object-fit: contain;
   border: 1px solid var(--line);
   border-radius: 6px;
+  background: white;
+}
+
+.mechanism-placeholder {
+  display: grid;
+  place-items: center;
+  min-height: 130px;
+  border: 1px dashed var(--line);
+  border-radius: 6px;
+  background: #f9faf9;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+  text-align: center;
+}
+
+.mechanism-placeholder span {
+  font-size: 12px;
+}
+
+.mechanism-placeholder.large {
+  min-height: 480px;
+  padding: 24px;
+}
+
+.mechanism-preview {
+  display: grid;
+  grid-template-rows: auto minmax(480px, 1fr);
+  gap: 12px;
+  min-height: 560px;
+}
+
+.mechanism-preview-stage {
+  display: grid;
+  min-height: 480px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f9faf9;
+  overflow: hidden;
+}
+
+.mechanism-preview img {
+  width: 100%;
+  height: min(68vh, 720px);
+  min-height: 480px;
+  object-fit: contain;
   background: white;
 }
 
@@ -1343,6 +1423,182 @@ h1 {
   line-height: 1;
 }
 
+/* ── 科研自动化 ── */
+
+.automation-intro {
+  overflow-x: auto;
+}
+
+.automation-template,
+.automation-steps {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(118px, 1fr));
+  gap: 8px;
+}
+
+.template-step,
+.automation-step {
+  display: grid;
+  gap: 7px;
+  min-height: 76px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 10px;
+  text-align: left;
+}
+
+.template-step span,
+.step-index,
+.workflow-steps > div > span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.automation-card {
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 16px;
+}
+
+.automation-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.automation-summary > div {
+  border-left: 3px solid var(--blue);
+  background: var(--bg);
+  padding: 10px 12px;
+}
+
+.automation-summary p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.automation-step {
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.automation-step em {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.automation-step.active {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+}
+
+.automation-step.done {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.automation-step.rework {
+  border-color: var(--warn);
+  background: var(--warn-soft);
+}
+
+/* ── NATURE Skills ── */
+
+.nature-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(260px, 0.7fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.nature-hero h2 {
+  margin: 12px 0 8px;
+  font-size: 26px;
+}
+
+.nature-hero p,
+.nature-card p,
+.nature-workflow p {
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.nature-source,
+.command-card,
+.nature-card {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 14px;
+}
+
+.nature-source {
+  align-content: center;
+}
+
+.nature-source a {
+  color: var(--blue);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.nature-source span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.command-card + .command-card {
+  margin-top: 10px;
+}
+
+.command-card code {
+  display: block;
+  overflow-x: auto;
+  border-radius: 6px;
+  background: var(--bg);
+  padding: 10px;
+  color: var(--ink);
+  line-height: 1.55;
+}
+
+.nature-card h3 {
+  margin: 4px 0 0;
+}
+
+.nature-card strong {
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.workflow-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.workflow-steps > div {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+}
+
 @media (max-width: 920px) {
   .intro-shell {
     width: min(100vw - 24px, 720px);
@@ -1398,9 +1654,18 @@ h1 {
   .two-col,
   .three-col,
   .mechanism-grid,
+  .mechanism-viewer,
   .suggestion-grid,
-  .achievement-grid {
+  .achievement-grid,
+  .automation-summary,
+  .nature-hero,
+  .workflow-steps {
     grid-template-columns: 1fr;
+  }
+
+  .automation-template,
+  .automation-steps {
+    grid-template-columns: repeat(2, minmax(130px, 1fr));
   }
 
   .today-item,
@@ -1412,6 +1677,22 @@ h1 {
 
   .knowledge-graph {
     height: 380px;
+  }
+
+  .mechanism-thumbs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    max-height: none;
+  }
+
+  .mechanism-preview {
+    min-height: 420px;
+    grid-template-rows: auto minmax(360px, 1fr);
+  }
+
+  .mechanism-preview-stage,
+  .mechanism-placeholder.large,
+  .mechanism-preview img {
+    min-height: 360px;
   }
 }
 
@@ -1470,6 +1751,26 @@ h1 {
     max-width: 94px;
     padding: 5px 8px;
     font-size: 11px;
+  }
+
+  .automation-template,
+  .automation-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .mechanism-thumbs {
+    grid-template-columns: 1fr;
+  }
+
+  .mechanism-preview {
+    min-height: 340px;
+    grid-template-rows: auto minmax(280px, 1fr);
+  }
+
+  .mechanism-preview-stage,
+  .mechanism-placeholder.large,
+  .mechanism-preview img {
+    min-height: 280px;
   }
 }
 
