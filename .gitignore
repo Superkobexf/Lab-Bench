@@ -12,3 +12,5 @@ server/uploads/
 __pycache__/
 *.pyc
 .venv/
+.pytest_cache/
+server/tests/__pycache__/
