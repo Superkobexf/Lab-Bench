@@ -87,6 +87,114 @@
   :root { --dur: 1ms; }
 }
 
+/* 侧栏是唯一一块"本来就是深色"的区域。浅色模式下它靠深底和页面区分；
+   深色模式下页面也变深了，所以它得再压暗一档，否则两者糊在一起。 */
+:root {
+  --rail:        #162325;
+  --rail-ink:    #f4fbf8;
+  --rail-muted:  #c7dbd6;
+  --rail-faint:  #adc6c0;
+  --rail-active: #223638;
+}
+
+/* ══════════════════════════════════════════════════════════
+   深色模式
+   三态：跟随系统（不打标记）、显式浅色、显式深色。
+   媒体查询要排除显式浅色，否则用户在深色系统下选"浅色"会失效。
+
+   语义色不能直接搬。上一轮好不容易调达标的对比度，
+   原样放到深底上会全线掉到 2 点几——每个值都是重新算过的。
+   ══════════════════════════════════════════════════════════ */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --bg:            #0f1615;
+    --surface:       #17201f;
+    --surface-sunk:  #131b1a;
+    --surface-raise: #1c2625;
+
+    --ink:           #e4ebe8;
+    --ink-2:         #b3c1bd;
+    --muted:         #94a49f;
+    --faint:         #8a9a95;
+
+    --line:          #26312f;
+    --line-strong:   #35423f;
+
+    --accent:        #4fb3a7;
+    --accent-strong: #6cc9bd;
+    --accent-soft:   #12302d;
+    --accent-line:   #2f6b64;
+
+    --warn:          #d9a94e;
+    --warn-soft:     #2c2410;
+    --danger:        #e08379;
+    --danger-soft:   #2f1a17;
+    --blue:          #7fb0dd;
+    --blue-soft:     #16232f;
+    --violet:        #a893d4;
+    --violet-soft:   #221c30;
+
+    --rail:          #131d1c;
+    --rail-ink:      #e8f1ee;
+    --rail-muted:    #9fb5b0;
+    --rail-faint:    #7f9591;
+    --rail-active:   #1f2e2c;
+
+    /* 深色下阴影几乎看不见，改用更强的边框承担分层。 */
+    --sh-1: 0 1px 2px rgba(0, 0, 0, .30);
+    --sh-2: 0 1px 2px rgba(0, 0, 0, .30),
+            0 6px 16px rgba(0, 0, 0, .28);
+    --sh-pop: 0 2px 8px rgba(0, 0, 0, .40),
+              0 16px 40px rgba(0, 0, 0, .45);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg:            #0f1615;
+  --surface:       #17201f;
+  --surface-sunk:  #131b1a;
+  --surface-raise: #1c2625;
+
+  --ink:           #e4ebe8;
+  --ink-2:         #b3c1bd;
+  --muted:         #94a49f;
+  --faint:         #8a9a95;
+
+  --line:          #26312f;
+  --line-strong:   #35423f;
+
+  --accent:        #4fb3a7;
+  --accent-strong: #6cc9bd;
+  --accent-soft:   #12302d;
+  --accent-line:   #2f6b64;
+
+  --warn:          #d9a94e;
+  --warn-soft:     #2c2410;
+  --danger:        #e08379;
+  --danger-soft:   #2f1a17;
+  --blue:          #7fb0dd;
+  --blue-soft:     #16232f;
+  --violet:        #a893d4;
+  --violet-soft:   #221c30;
+
+  --rail:          #131d1c;
+  --rail-ink:      #e8f1ee;
+  --rail-muted:    #9fb5b0;
+  --rail-faint:    #7f9591;
+  --rail-active:   #1f2e2c;
+
+  --sh-1: 0 1px 2px rgba(0, 0, 0, .30);
+  --sh-2: 0 1px 2px rgba(0, 0, 0, .30),
+          0 6px 16px rgba(0, 0, 0, .28);
+  --sh-pop: 0 2px 8px rgba(0, 0, 0, .40),
+            0 16px 40px rgba(0, 0, 0, .45);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -509,8 +617,36 @@ button {
   flex-direction: column;
   min-height: 100vh;
   padding: 22px 16px;
-  background: #162325;
-  color: #f4fbf8;
+  background: var(--rail);
+  color: var(--rail-ink);
+}
+
+/* 宽屏下侧栏自己占满一屏并固定，导航区内部滚动。
+   导航有 16 项，内容高度 1592px，光靠 min-height:100vh 会把
+   语言切换和主题按钮顶到折叠线以下，够到它们得滚整页。
+   窄屏走 860 断点的横排方案，这里不参与。 */
+@media (min-width: 861px) {
+  .sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    min-height: 0;
+  }
+
+  /* min-height:0 是必需的：flex 子项默认 min-height:auto，
+     不解开的话 overflow 不会生效，nav 仍旧把侧栏撑高。 */
+  .nav {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+
+  .sidebar-foot { flex: 0 0 auto; }
+
+  /* 底部邻居（语言切换、开启提醒）都是通栏，主题按钮不跟就会
+     是一个对不齐的小胶囊。只在宽屏通栏，窄屏走横排。 */
+  .theme-toggle { width: 100%; }
 }
 
 .brand {
@@ -552,7 +688,7 @@ button {
 }
 
 .brand small {
-  color: #adc6c0;
+  color: var(--rail-faint);
   margin-top: 2px;
 }
 
@@ -566,14 +702,14 @@ button {
   padding: 0 12px;
   border-radius: var(--r-sm);
   background: transparent;
-  color: #c7dbd6;
+  color: var(--rail-muted);
   text-align: left;
 }
 
 .nav-item:hover,
 .nav-item.active {
-  background: #223638;
-  color: #ffffff;
+  background: var(--rail-active);
+  color: var(--rail-ink);
 }
 
 .sidebar-foot {
@@ -767,7 +903,7 @@ h1 {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
-  background: white;
+  background: var(--surface);
   color: var(--ink);
   min-height: 38px;
   padding: 8px 10px;
@@ -813,8 +949,8 @@ h1 {
   min-height: 24px;
   padding: 0 8px;
   border-radius: var(--r-pill);
-  background: #edf2ef;
-  color: #415056;
+  background: var(--surface-sunk);
+  color: var(--ink-2);
   font-size: 12px;
 }
 
@@ -858,8 +994,8 @@ h1 {
   min-height: 32px;
   padding: 0 10px;
   border-radius: var(--r-sm);
-  background: #eef3ef;
-  color: #2a3a3d;
+  background: var(--surface-sunk);
+  color: var(--ink);
 }
 
 .paper-link {
@@ -872,7 +1008,7 @@ h1 {
 
 .paper-note {
   margin-top: 6px;
-  color: #586267;
+  color: var(--muted);
 }
 
 .icon-button {
@@ -894,7 +1030,7 @@ h1 {
   width: 100%;
   height: 8px;
   border-radius: var(--r-pill);
-  background: #e7ece8;
+  background: var(--line);
   overflow: hidden;
 }
 
@@ -921,7 +1057,7 @@ h1 {
   gap: 10px;
   border: 1px solid var(--line);
   border-radius: var(--r-md);
-  background: #fbfcfa;
+  background: var(--surface-sunk);
   padding: 10px;
 }
 
@@ -961,7 +1097,7 @@ h1 {
 }
 
 .issue p {
-  color: #4e5658;
+  color: var(--ink-2);
   font-size: 13px;
   line-height: 1.45;
 }
@@ -978,7 +1114,7 @@ h1 {
 }
 
 .field label {
-  color: #405055;
+  color: var(--ink-2);
   font-size: 13px;
 }
 
@@ -1018,7 +1154,7 @@ h1 {
   max-height: min(820px, 92vh);
   overflow: auto;
   border-radius: var(--r-md);
-  background: white;
+  background: var(--surface);
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.22);
   padding: 18px;
 }
@@ -1037,7 +1173,7 @@ h1 {
   color: var(--muted);
   border: 1px dashed #cdd7cf;
   border-radius: var(--r-md);
-  background: #fbfcfa;
+  background: var(--surface-sunk);
 }
 
 .empty-state strong {
@@ -1049,7 +1185,7 @@ h1 {
 .table {
   width: 100%;
   border-collapse: collapse;
-  background: white;
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   overflow: hidden;
@@ -1064,8 +1200,8 @@ h1 {
 }
 
 .table th {
-  color: #4b5b60;
-  background: #f1f5f1;
+  color: var(--ink-2);
+  background: var(--surface-sunk);
   font-size: 13px;
 }
 
@@ -1122,7 +1258,7 @@ h1 {
   gap: 12px;
   border: 1px solid var(--line);
   border-radius: var(--r-md);
-  background: #fbfcfa;
+  background: var(--surface-sunk);
   padding: 12px;
 }
 
@@ -1150,7 +1286,7 @@ h1 {
   object-fit: contain;
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
-  background: white;
+  background: var(--surface);
 }
 
 .mechanism-placeholder {
@@ -1159,7 +1295,7 @@ h1 {
   min-height: 130px;
   border: 1px dashed var(--line);
   border-radius: var(--r-sm);
-  background: #f9faf9;
+  background: var(--surface-sunk);
   color: var(--muted);
   font-size: 13px;
   line-height: 1.55;
@@ -1187,7 +1323,7 @@ h1 {
   min-height: 480px;
   border: 1px solid var(--line);
   border-radius: var(--r-md);
-  background: #f9faf9;
+  background: var(--surface-sunk);
   overflow: hidden;
 }
 
@@ -1196,7 +1332,7 @@ h1 {
   height: min(68vh, 720px);
   min-height: 480px;
   object-fit: contain;
-  background: white;
+  background: var(--surface);
 }
 
 .mechanism-card h3,
@@ -1256,7 +1392,7 @@ h1 {
   padding: 6px 10px;
   border: 1px solid rgba(75, 128, 99, 0.34);
   border-radius: var(--r-pill);
-  background: white;
+  background: var(--surface);
   color: var(--ink);
   box-shadow: var(--sh-2);
   font-size: 12px;
@@ -1359,7 +1495,7 @@ h1 {
   gap: 8px;
   padding: 10px 12px;
   border-radius: var(--r-md);
-  background: #eef5f0;
+  background: var(--accent-soft);
 }
 
 .achievement-score strong {
@@ -1380,7 +1516,7 @@ h1 {
   gap: 10px;
   border: 1px solid var(--line);
   border-radius: var(--r-md);
-  background: #fbfcfa;
+  background: var(--surface-sunk);
   padding: 10px;
 }
 
@@ -1888,7 +2024,7 @@ h1 {
   padding: 28px;
   border: 1px solid var(--line);
   border-radius: var(--r-md);
-  background: #fff;
+  background: var(--surface);
   box-shadow: var(--sh-2);
 }
 
@@ -1917,7 +2053,7 @@ h1 {
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
   font-size: 14px;
-  background: #fff;
+  background: var(--surface);
 }
 
 .auth-form input:focus {
@@ -1937,8 +2073,8 @@ h1 {
   margin: 12px 0 0;
   padding: 8px 10px;
   border-radius: var(--r-sm);
-  background: #fdeceb;
-  color: #a3271f;
+  background: var(--danger-soft);
+  color: var(--danger);
   font-size: 13px;
 }
 
@@ -1976,9 +2112,9 @@ h1 {
 }
 
 .sync-status.hidden { display: none; }
-.sync-status.pending { background: #eef2f6; color: #4a5b6b; }
-.sync-status.ok { background: #e8f4ec; color: #2f6f4f; }
-.sync-status.error { background: #fdeceb; color: #a3271f; }
+.sync-status.pending { background: var(--surface-sunk); color: var(--muted); }
+.sync-status.ok { background: var(--accent-soft); color: var(--accent-strong); }
+.sync-status.error { background: var(--danger-soft); color: var(--danger); }
 
 .nav-item.hidden { display: none; }
 
@@ -1997,7 +2133,7 @@ h1 {
   place-items: center;
   border: 1px dashed var(--line);
   border-radius: var(--r-sm);
-  background: #f9faf9;
+  background: var(--surface-sunk);
   overflow: hidden;
   margin-bottom: 10px;
 }
@@ -2044,7 +2180,7 @@ h1 {
   font-size: 12px;
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
-  background: #fff;
+  background: var(--surface);
   color: var(--muted);
 }
 
@@ -2951,6 +3087,7 @@ h1, h2, h3, h4 {
   .sidebar-foot > * { flex: 0 0 auto; margin: 0; width: auto; }
 
   .sidebar-foot .lang-switch { order: 1; }
+  .sidebar-foot .theme-toggle { order: 1; }
   .sidebar-foot #notifyBtn { order: 2; padding: 5px 10px; font-size: var(--t-xs); }
 
   .whoami {
@@ -2963,6 +3100,10 @@ h1, h2, h3, h4 {
   }
 
   .whoami #whoamiName { max-width: 9em; }
+
+  /* .sidebar-foot > * 只作用于直接子元素，够不到 .whoami 里面的
+     退出按钮，它仍带着基础样式的 width:100%，会把整行吃掉。 */
+  .whoami .ghost-button { width: auto; flex: 0 0 auto; }
   .lang-switch button { padding: 4px 9px; font-size: var(--t-xs); }
 
   .main { padding: var(--s4); }
@@ -3063,7 +3204,7 @@ button[disabled] {
   #app { grid-template-columns: 1fr; }
   .main { padding: 0; }
 
-  body { background: #fff; font-size: 11pt; }
+  body { background: var(--surface); font-size: 11pt; }
 
   .panel,
   .list-row,
@@ -3076,3 +3217,139 @@ button[disabled] {
   .view:not(.active-view) { display: none; }
   a[href^="/api/"]::after { content: ""; }   /* 内部链接不打印 URL */
 }
+
+/* ══════════════════════════════════════════════════════════
+   深色模式的组件修正
+   变量换完不等于就对了——有几处颜色关系在深底上会反过来。
+   ══════════════════════════════════════════════════════════ */
+
+/* 主按钮：浅色模式是深青底配白字（5.47）；深色模式如果照搬亮青底配白字
+   只有 2.52，严重不达标。深色下改成亮青底配近黑字（7.28）。 */
+:root[data-theme="dark"] .primary-button,
+:root[data-theme="dark"] .toolbar .primary-button,
+:root[data-theme="dark"] .top-actions button,
+:root[data-theme="dark"] .graph-node.central {
+  background: var(--accent);
+  color: #0f1615;
+  border-color: transparent;
+}
+
+:root[data-theme="dark"] .primary-button:hover,
+:root[data-theme="dark"] .top-actions button:hover {
+  background: var(--accent-strong);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .primary-button,
+  :root:not([data-theme="light"]) .toolbar .primary-button,
+  :root:not([data-theme="light"]) .top-actions button,
+  :root:not([data-theme="light"]) .graph-node.central {
+    background: var(--accent);
+    color: #0f1615;
+    border-color: transparent;
+  }
+
+  :root:not([data-theme="light"]) .primary-button:hover,
+  :root:not([data-theme="light"]) .top-actions button:hover {
+    background: var(--accent-strong);
+  }
+}
+
+/* 输入框在深底上必须有明确边界，否则和卡片糊成一片 */
+:root[data-theme="dark"] :is(.field input, .field select, .field textarea,
+  .toolbar input, .toolbar select, .auth-form input, .textarea-export),
+:root[data-theme="dark"] .toolbar-actions :is(select, input) {
+  background: var(--surface-sunk);
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) :is(.field input, .field select, .field textarea,
+    .toolbar input, .toolbar select, .auth-form input, .textarea-export),
+  :root:not([data-theme="light"]) .toolbar-actions :is(select, input) {
+    background: var(--surface-sunk);
+    border-color: var(--line-strong);
+    color: var(--ink);
+  }
+}
+
+/* 悬停底色：浅色模式用变淡，深色模式必须用变亮，方向是反的 */
+:root[data-theme="dark"] .table tbody tr:hover { background: var(--surface-raise); }
+:root[data-theme="dark"] .nav-item:hover { background: rgba(255, 255, 255, .05); }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .table tbody tr:hover { background: var(--surface-raise); }
+  :root:not([data-theme="light"]) .nav-item:hover { background: rgba(255, 255, 255, .05); }
+}
+
+/* 弹窗遮罩在深色下要更黑，否则和卡片分不开 */
+:root[data-theme="dark"] #modal { background: rgba(0, 0, 0, .62); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) #modal { background: rgba(0, 0, 0, .62); }
+}
+
+/* 空态的虚线在深底上几乎看不见 */
+:root[data-theme="dark"] .empty-state { border-color: var(--line-strong); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .empty-state { border-color: var(--line-strong); }
+}
+
+/* ── 主题切换按钮 ── */
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 5px 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid rgba(255, 255, 255, .14);
+  background: transparent;
+  color: var(--rail-muted);
+  font-size: var(--t-xs);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease),
+              color var(--dur) var(--ease),
+              border-color var(--dur) var(--ease);
+}
+
+.theme-toggle:hover {
+  background: rgba(255, 255, 255, .07);
+  color: var(--rail-ink);
+  border-color: rgba(255, 255, 255, .24);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.theme-toggle svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* 图标按当前主题切换：跟随系统时显示当前实际生效的那个 */
+.theme-toggle .icon-moon { display: none; }
+.theme-toggle .icon-sun  { display: block; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-toggle .icon-sun  { display: none; }
+  :root:not([data-theme="light"]) .theme-toggle .icon-moon { display: block; }
+}
+
+:root[data-theme="dark"] .theme-toggle .icon-sun  { display: none; }
+:root[data-theme="dark"] .theme-toggle .icon-moon { display: block; }
+:root[data-theme="light"] .theme-toggle .icon-sun  { display: block; }
+:root[data-theme="light"] .theme-toggle .icon-moon { display: none; }
+
+.theme-toggle .theme-label { white-space: nowrap; }

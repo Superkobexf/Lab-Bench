@@ -527,7 +527,7 @@ def index():
 def static_root(filename: str):
     """开发用：直接吐根目录下的前端文件。生产环境由 nginx 接管，
     不会走到这里。"""
-    if filename not in ("app.js", "api.js", "i18n.js", "styles.css", "favicon.ico"):
+    if filename not in ("app.js", "api.js", "i18n.js", "theme.js", "styles.css", "favicon.ico"):
         raise HTTPException(404, "Not found")
     path = os.path.join(ROOT, filename)
     if not os.path.isfile(path):

@@ -5204,6 +5204,7 @@ function applyStaticTranslations() {
   /* 这个函数会用捕获的原始 HTML 重写侧栏，把角色可见性加的 hidden 冲掉，
      所以每次都要重新收敛一次导航——否则学生切一次语言就看见全部菜单。 */
   applyRoleVisibility();
+  refreshThemeButton();
 }
 
 function switchLanguage(lang) {
@@ -5276,6 +5277,60 @@ async function enterApp() {
   maybeNotify();
 }
 
+/* ── 主题 ── */
+
+/* 三态循环：跟随系统 → 浅色 → 深色 → 跟随系统。
+   保留"跟随系统"这一档是有意的——多数人希望应用跟着系统昼夜切换，
+   只有两态的开关会把这个选项拿掉。 */
+const THEME_ORDER = ["system", "light", "dark"];
+
+const THEME_LABEL = {
+  system: "跟随系统",
+  light: "浅色",
+  dark: "深色",
+};
+
+function currentThemeMode() {
+  return window.LabBenchTheme?.get() || "system";
+}
+
+function refreshThemeButton() {
+  const button = $("#themeToggle");
+  if (!button) return;
+  const mode = currentThemeMode();
+  const label = button.querySelector(".theme-label");
+  if (label) label.textContent = t(THEME_LABEL[mode]);
+  /* 按钮说的是"现在是什么"，不是"点了会变成什么"——
+     后者要求用户在脑子里做一次转换，容易点错。 */
+  const next = THEME_ORDER[(THEME_ORDER.indexOf(mode) + 1) % THEME_ORDER.length];
+  /* i18n 是按「以汉字开头的中文串」逐段匹配的，没有整句 key，
+     中文逗号也永远匹配不上（它不能作为串的开头）。所以：
+     冒号并进词条里一起翻，段与段之间用中点分隔。 */
+  button.setAttribute(
+    "title",
+    `${t("当前：")}${t(THEME_LABEL[mode])} · ${t("点击切换为")}${t(THEME_LABEL[next])}`,
+  );
+  button.setAttribute("aria-label", `${t("外观：")}${t(THEME_LABEL[mode])}`);
+}
+
+function cycleTheme() {
+  const mode = currentThemeMode();
+  const next = THEME_ORDER[(THEME_ORDER.indexOf(mode) + 1) % THEME_ORDER.length];
+  window.LabBenchTheme?.set(next);
+  refreshThemeButton();
+}
+
+function attachThemeEvents() {
+  $("#themeToggle")?.addEventListener("click", cycleTheme);
+  /* 处于"跟随系统"时，系统昼夜切换要让按钮文字跟着更新。
+     CSS 自己会响应，但按钮上的文字不会。 */
+  window.matchMedia?.("(prefers-color-scheme: dark)")
+    ?.addEventListener?.("change", () => {
+      if (currentThemeMode() === "system") refreshThemeButton();
+    });
+  refreshThemeButton();
+}
+
 function attachAuthEvents() {
   $("#loginForm")?.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -5337,6 +5392,7 @@ async function bootstrap() {
   applyStaticTranslations();
   attachEvents();
   attachAuthEvents();
+  attachThemeEvents();
   initIntroSplash();
   try {
     await API.me();
