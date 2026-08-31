@@ -1,22 +1,90 @@
 :root {
   color-scheme: light;
-  --bg: #f6f7f4;
-  --panel: #ffffff;
-  --ink: #1e2528;
-  --muted: #667177;
-  --line: #dfe5df;
-  --accent: #0f766e;
-  --accent-strong: #0b5d56;
-  --accent-soft: #dff1ed;
-  --warn: #b45309;
-  --warn-soft: #fff3dc;
-  --danger: #b42318;
-  --danger-soft: #fde8e5;
-  --blue: #2f5f98;
-  --blue-soft: #e5eef8;
-  --violet: #6b4aa0;
-  --violet-soft: #eee8f8;
-  --shadow: 0 12px 30px rgba(34, 44, 50, 0.08);
+
+  /* ── 中性色 ──
+     不是纯灰。每一档都朝主色的青绿方向偏了一点点——纯中性灰看起来
+     像没调过，带一点主色偏移才像是选出来的。 */
+  --bg:            #f1f4f2;
+  --surface:       #ffffff;
+  --surface-sunk:  #f6f9f7;
+  --surface-raise: #ffffff;
+
+  --ink:           #131c1b;
+  --ink-2:         #3b4a47;
+  --muted:         #6a7975;
+  --faint:         #8d9b97;
+
+  --line:          #e3eae6;
+  --line-strong:   #cedad5;
+
+  /* ── 语义色 ──
+     统一到相近的彩度。原来的橙偏烫、蓝偏灰，彼此不在一个色彩空间里。 */
+  --accent:        #0f766e;
+  --accent-strong: #0a5d56;
+  --accent-soft:   #dff1ed;
+  --accent-line:   #a8d8d0;
+
+  --warn:          #96650f;
+  --warn-soft:     #fbf0da;
+  --danger:        #a3342a;
+  --danger-soft:   #fbe9e6;
+  --blue:          #2c5e8e;
+  --blue-soft:     #e4edf6;
+  --violet:        #614a8c;
+  --violet-soft:   #ece7f5;
+
+  /* ── 间距刻度 ──
+     4px 基数。之前全是随手写的数字，卡片内外的间距没有关系。 */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 22px;
+  --s6: 32px;
+  --s7: 48px;
+
+  /* ── 字号刻度 ──
+     从 13 档收到 8 档。原来 29px 和 30px 并存，层级根本读不出来。 */
+  --t-xs:   11.5px;
+  --t-sm:   12.5px;
+  --t-base: 13.5px;
+  --t-md:   15px;
+  --t-lg:   17px;
+  --t-xl:   21px;
+  --t-2xl:  28px;
+  --t-num:  32px;
+
+  /* ── 圆角 ──
+     从 7 种收到 3 种 + 药丸。混用的圆角是廉价感的第一来源。 */
+  --r-sm:   6px;
+  --r-md:   10px;
+  --r-lg:   14px;
+  --r-pill: 999px;
+
+  /* ── 阴影 ──
+     多层柔和叠加，光源统一自上方。单层大模糊会显得"糊"，
+     贴地的一层加上扩散的一层才有实体感。 */
+  --sh-1: 0 1px 2px rgba(19, 28, 27, .04),
+          0 1px 3px rgba(19, 28, 27, .03);
+  --sh-2: 0 1px 2px rgba(19, 28, 27, .04),
+          0 4px 10px rgba(19, 28, 27, .045),
+          0 12px 28px rgba(19, 28, 27, .04);
+  --sh-pop: 0 2px 6px rgba(19, 28, 27, .07),
+            0 12px 28px rgba(19, 28, 27, .10),
+            0 32px 64px rgba(19, 28, 27, .10);
+
+  /* ── 动效 ──
+     一档时长、一条缓动曲线。多了就杂。 */
+  --dur:  150ms;
+  --ease: cubic-bezier(.2, .6, .3, 1);
+
+  /* 兼容旧变量名，避免遗漏处失色 */
+  --panel: var(--surface);
+  --shadow: var(--sh-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur: 1ms; }
 }
 
 * {
@@ -27,7 +95,13 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text",
+    "Segoe UI", "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei",
+    system-ui, sans-serif;
+  font-feature-settings: "cv05" 1, "ss01" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   letter-spacing: 0;
 }
 
@@ -61,9 +135,9 @@ body {
   min-height: min(650px, calc(100vh - 40px));
   overflow: hidden;
   border: 1px solid rgba(211, 231, 226, 0.22);
-  border-radius: 8px;
+  border-radius: var(--r-md);
   background: rgba(17, 30, 33, 0.78);
-  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.28);
+  box-shadow: var(--sh-pop);
 }
 
 .intro-topline {
@@ -87,7 +161,7 @@ body {
   place-items: center;
   width: 38px;
   height: 38px;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   background: linear-gradient(145deg, #1aa89a, #2f5f98);
 }
 
@@ -105,7 +179,7 @@ body {
   min-height: 36px;
   padding: 0 14px;
   border: 1px solid rgba(232, 246, 242, 0.34);
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   background: rgba(255, 255, 255, 0.08);
   color: #f8fffc;
 }
@@ -182,7 +256,7 @@ body {
   gap: 16px;
   min-height: 300px;
   border: 1px solid rgba(213, 235, 229, 0.22);
-  border-radius: 8px;
+  border-radius: var(--r-md);
   background: rgba(249, 252, 250, 0.08);
   padding: 24px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
@@ -190,7 +264,7 @@ body {
 
 .board-row {
   height: 54px;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   background: linear-gradient(90deg, rgba(158, 226, 217, 0.32), rgba(47, 95, 152, 0.22));
   transform-origin: left;
   animation: introGrow 1.4s ease both;
@@ -209,7 +283,7 @@ body {
 .board-grid span {
   min-height: 84px;
   border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 8px;
+  border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.1);
 }
 
@@ -227,7 +301,7 @@ body {
   bottom: 18px;
   left: 12px;
   width: 3px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: linear-gradient(#9ee2d9, #f4b860, #8fb5e4);
 }
 
@@ -236,7 +310,7 @@ body {
   display: block;
   min-height: 58px;
   border: 1px solid rgba(213, 235, 229, 0.22);
-  border-radius: 8px;
+  border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.09);
   padding: 18px 20px;
   color: #f8fffc;
@@ -265,7 +339,7 @@ body {
 
 .chart-bars i {
   display: block;
-  border-radius: 8px 8px 4px 4px;
+  border-radius: var(--r-sm) var(--r-sm) 2px 2px;
   background: linear-gradient(180deg, #f4b860, #1aa89a);
   animation: introBar 1.6s ease both;
 }
@@ -296,7 +370,7 @@ body {
 
 .evidence-lines span {
   height: 12px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgba(232, 246, 242, 0.24);
 }
 
@@ -451,7 +525,7 @@ button {
   place-items: center;
   width: 38px;
   height: 38px;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   background: linear-gradient(145deg, #1aa89a, #2f5f98);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 8px 18px rgba(0, 0, 0, 0.18);
 }
@@ -490,7 +564,7 @@ button {
 .nav-item {
   min-height: 40px;
   padding: 0 12px;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   background: transparent;
   color: #c7dbd6;
   text-align: left;
@@ -516,14 +590,14 @@ button {
   gap: 4px;
   margin-bottom: 10px;
   padding: 3px;
-  border-radius: 7px;
+  border-radius: var(--r-sm);
   background: rgba(255, 255, 255, 0.06);
 }
 
 .lang-switch button {
   min-height: 30px;
   border: 0;
-  border-radius: 5px;
+  border-radius: var(--r-sm);
   background: transparent;
   color: #a6bdb7;
   font-size: 12px;
@@ -545,7 +619,7 @@ button {
   width: 100%;
   min-height: 38px;
   border: 1px solid #385052;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   background: transparent;
   color: #f3faf8;
 }
@@ -590,7 +664,7 @@ h1 {
 .primary-button {
   min-height: 38px;
   padding: 0 14px;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   background: var(--accent);
   color: white;
   white-space: nowrap;
@@ -632,7 +706,7 @@ h1 {
 .list-row {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--r-md);
 }
 
 .card {
@@ -692,7 +766,7 @@ h1 {
 .field textarea {
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   background: white;
   color: var(--ink);
   min-height: 38px;
@@ -738,7 +812,7 @@ h1 {
   align-items: center;
   min-height: 24px;
   padding: 0 8px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #edf2ef;
   color: #415056;
   font-size: 12px;
@@ -783,7 +857,7 @@ h1 {
   justify-content: center;
   min-height: 32px;
   padding: 0 10px;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   background: #eef3ef;
   color: #2a3a3d;
 }
@@ -819,7 +893,7 @@ h1 {
 .progress-track {
   width: 100%;
   height: 8px;
-  border-radius: 99px;
+  border-radius: var(--r-pill);
   background: #e7ece8;
   overflow: hidden;
 }
@@ -846,7 +920,7 @@ h1 {
   align-items: center;
   gap: 10px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--r-md);
   background: #fbfcfa;
   padding: 10px;
 }
@@ -873,7 +947,7 @@ h1 {
   border-left: 4px solid var(--warn);
   padding: 10px 12px;
   background: var(--warn-soft);
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 }
 
 .issue.high {
@@ -943,7 +1017,7 @@ h1 {
   width: min(780px, 100%);
   max-height: min(820px, 92vh);
   overflow: auto;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   background: white;
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.22);
   padding: 18px;
@@ -962,7 +1036,7 @@ h1 {
   text-align: center;
   color: var(--muted);
   border: 1px dashed #cdd7cf;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   background: #fbfcfa;
 }
 
@@ -977,7 +1051,7 @@ h1 {
   border-collapse: collapse;
   background: white;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--r-md);
   overflow: hidden;
 }
 
@@ -1010,7 +1084,7 @@ h1 {
   min-height: 220px;
   margin-top: 12px;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   padding: 10px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12px;
@@ -1047,7 +1121,7 @@ h1 {
   display: grid;
   gap: 12px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--r-md);
   background: #fbfcfa;
   padding: 12px;
 }
@@ -1075,7 +1149,7 @@ h1 {
   aspect-ratio: 4 / 3;
   object-fit: contain;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   background: white;
 }
 
@@ -1084,7 +1158,7 @@ h1 {
   place-items: center;
   min-height: 130px;
   border: 1px dashed var(--line);
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   background: #f9faf9;
   color: var(--muted);
   font-size: 13px;
@@ -1112,7 +1186,7 @@ h1 {
   display: grid;
   min-height: 480px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--r-md);
   background: #f9faf9;
   overflow: hidden;
 }
@@ -1155,7 +1229,7 @@ h1 {
   height: 430px;
   min-height: 360px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--r-md);
   background:
     radial-gradient(circle at center, rgba(75, 128, 99, 0.1), transparent 38%),
     linear-gradient(180deg, #ffffff 0%, #f7faf7 100%);
@@ -1181,10 +1255,10 @@ h1 {
   min-height: 32px;
   padding: 6px 10px;
   border: 1px solid rgba(75, 128, 99, 0.34);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: white;
   color: var(--ink);
-  box-shadow: 0 8px 22px rgba(30, 49, 38, 0.1);
+  box-shadow: var(--sh-2);
   font-size: 12px;
   line-height: 1.25;
   white-space: normal;
@@ -1230,7 +1304,7 @@ h1 {
   gap: 12px;
   min-height: 210px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--r-md);
   background: linear-gradient(180deg, #ffffff 0%, #f8fbf7 100%);
   padding: 14px;
 }
@@ -1257,7 +1331,7 @@ h1 {
   display: inline-flex;
   align-items: center;
   min-height: 28px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   padding: 0 10px;
   font-size: 12px;
   font-weight: 700;
@@ -1284,7 +1358,7 @@ h1 {
   align-items: baseline;
   gap: 8px;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   background: #eef5f0;
 }
 
@@ -1305,7 +1379,7 @@ h1 {
   align-items: center;
   gap: 10px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--r-md);
   background: #fbfcfa;
   padding: 10px;
 }
@@ -1315,7 +1389,7 @@ h1 {
   place-items: center;
   width: 34px;
   height: 34px;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   background: var(--blue-soft);
   color: var(--blue);
   font-weight: 700;
@@ -1357,7 +1431,7 @@ h1 {
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   padding: 12px 14px;
   margin-bottom: 14px;
   font-size: 14px;
@@ -1397,7 +1471,7 @@ h1 {
   gap: 6px;
   max-width: 100%;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--bg);
   padding: 3px 10px;
   font-size: 12px;
@@ -1442,7 +1516,7 @@ h1 {
   gap: 7px;
   min-height: 76px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--r-md);
   background: var(--panel);
   padding: 10px;
   text-align: left;
@@ -1466,7 +1540,7 @@ h1 {
   display: grid;
   gap: 14px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--r-md);
   background: var(--panel);
   padding: 16px;
 }
@@ -1542,7 +1616,7 @@ h1 {
   display: grid;
   gap: 8px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--r-md);
   background: var(--panel);
   padding: 14px;
 }
@@ -1569,7 +1643,7 @@ h1 {
 .command-card code {
   display: block;
   overflow-x: auto;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   background: var(--bg);
   padding: 10px;
   color: var(--ink);
@@ -1595,7 +1669,7 @@ h1 {
   display: grid;
   gap: 8px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--r-md);
   padding: 12px;
 }
 
@@ -1813,9 +1887,9 @@ h1 {
   width: min(380px, 100%);
   padding: 28px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--r-md);
   background: #fff;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--sh-2);
 }
 
 .auth-brand {
@@ -1841,7 +1915,7 @@ h1 {
   width: 100%;
   padding: 9px 11px;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   font-size: 14px;
   background: #fff;
 }
@@ -1862,7 +1936,7 @@ h1 {
 .auth-error {
   margin: 12px 0 0;
   padding: 8px 10px;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   background: #fdeceb;
   color: #a3271f;
   font-size: 13px;
@@ -1896,7 +1970,7 @@ h1 {
   display: inline-block;
   margin-left: 12px;
   padding: 3px 9px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   font-size: 12px;
   vertical-align: middle;
 }
@@ -1912,7 +1986,7 @@ h1 {
 
 .upload-field {
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--r-md);
   padding: 12px;
   background: var(--panel, #fff);
 }
@@ -1922,7 +1996,7 @@ h1 {
   display: grid;
   place-items: center;
   border: 1px dashed var(--line);
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   background: #f9faf9;
   overflow: hidden;
   margin-bottom: 10px;
@@ -1949,7 +2023,7 @@ h1 {
 .attachment-chip.stored a:focus-visible {
   outline: 2px solid var(--accent, #0f766e);
   outline-offset: 1px;
-  border-radius: 3px;
+  border-radius: var(--r-sm);
 }
 
 /* ── 周计划条目关联目标 ── */
@@ -1969,7 +2043,7 @@ h1 {
   padding: 3px 7px;
   font-size: 12px;
   border: 1px solid var(--line);
-  border-radius: 5px;
+  border-radius: var(--r-sm);
   background: #fff;
   color: var(--muted);
 }
@@ -1980,3 +2054,945 @@ h1 {
 }
 
 .plan-goal-summary { margin: 8px 0 0; }
+
+/* ══════════════════════════════════════════════════════════
+   精修层
+   把上面归一后的 token 落到具体组件上。这一层只调质感，
+   不改结构和行为。
+   ══════════════════════════════════════════════════════════ */
+
+/* ── 排版基线 ──
+   中文界面里的"高级感"主要靠这三件事：字重克制在 400/500/600，
+   大字收紧字距、小字放开，行高按用途分档。 */
+
+body {
+  font-size: var(--t-base);
+  line-height: 1.65;
+}
+
+h1, h2, h3, h4 {
+  font-weight: 600;
+  letter-spacing: -.012em;   /* 大字负字距；中文不受影响，拉丁数字变紧致 */
+  line-height: 1.28;
+  text-wrap: balance;
+}
+
+/* 数字要对齐。KPI、金额、天数这些列在一起时不等宽会显得松垮。 */
+.kpi strong, .rank-number, .metric-value, .table td,
+.progress-track + *, .achievement-badge {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 侧边栏 ──
+   原来 17 项撑得很满。收紧行高、降低非激活项的对比、
+   给激活项一个明确但安静的标记。 */
+
+.nav-item {
+  border-radius: var(--r-sm);
+  padding: 7px var(--s3);
+  font-size: var(--t-base);
+  font-weight: 500;
+  letter-spacing: .002em;
+  transition: background var(--dur) var(--ease),
+              color var(--dur) var(--ease);
+}
+
+.nav-item:hover { background: rgba(255, 255, 255, .07); }
+
+.nav-item.active {
+  background: rgba(255, 255, 255, .11);
+  font-weight: 600;
+}
+
+.nav-item:focus-visible {
+  outline: 2px solid var(--accent-line);
+  outline-offset: 1px;
+}
+
+/* ── 顶栏 ──
+   标题与副标题原来贴得太近，层级靠字号硬撑。
+   拉开距离、副标题降饱和，层级自然读出来。 */
+
+.topbar h1 {
+  font-size: var(--t-2xl);
+  letter-spacing: -.02em;
+  margin-bottom: 2px;
+}
+
+.topbar p {
+  font-size: var(--t-base);
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+/* ── 面板 ──
+   统一内边距与圆角；边框比阴影更重要——
+   1px 的准确边框比一坨阴影更显精致。 */
+
+.panel {
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: var(--s5);
+  box-shadow: var(--sh-1);
+  transition: box-shadow var(--dur) var(--ease),
+              border-color var(--dur) var(--ease);
+}
+
+.panel-head {
+  margin-bottom: var(--s4);
+  padding-bottom: var(--s3);
+  border-bottom: 1px solid var(--line);
+}
+
+.panel-head h2 {
+  font-size: var(--t-lg);
+  letter-spacing: -.01em;
+}
+
+/* ── KPI 卡 ──
+   原来 34px 数字配 12px 说明，对比过强反而廉价。
+   把数字压到 28px、加负字距，说明升到 12.5px 并分两行，
+   数字与文字的关系才成立。 */
+
+.kpi {
+  padding: var(--s4) var(--s5);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line);
+  box-shadow: var(--sh-1);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  transition: box-shadow var(--dur) var(--ease),
+              transform var(--dur) var(--ease);
+}
+
+.kpi:hover {
+  box-shadow: var(--sh-2);
+  transform: translateY(-1px);
+}
+
+.kpi strong {
+  font-size: var(--t-2xl);
+  font-weight: 600;
+  letter-spacing: -.03em;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.kpi span {
+  font-size: var(--t-sm);
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ── 按钮 ──
+   主按钮去掉厚重感：不用渐变、不用大阴影，靠色彩和一点点位移。 */
+
+.primary-button,
+.small-button,
+.ghost-button {
+  border-radius: var(--r-sm);
+  font-weight: 500;
+  letter-spacing: .006em;
+  transition: background var(--dur) var(--ease),
+              border-color var(--dur) var(--ease),
+              color var(--dur) var(--ease),
+              transform var(--dur) var(--ease);
+}
+
+.primary-button {
+  padding: 8px var(--s4);
+  font-size: var(--t-base);
+  box-shadow: var(--sh-1);
+}
+
+.primary-button:hover { background: var(--accent-strong); }
+.primary-button:active { transform: translateY(1px); }
+
+.small-button {
+  padding: 5px 11px;
+  font-size: var(--t-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink-2);
+}
+
+.small-button:hover {
+  border-color: var(--accent-line);
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+}
+
+.small-button:active { transform: translateY(1px); }
+
+.danger-button:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+:is(.primary-button, .small-button, .ghost-button):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ── 标签 ──
+   药丸形、无边框、低饱和底色。原来的标签边框和文字抢注意力。 */
+
+.tag {
+  border-radius: var(--r-pill);
+  padding: 3px 9px;
+  font-size: var(--t-xs);
+  font-weight: 500;
+  letter-spacing: .012em;
+  border: none;
+  line-height: 1.5;
+}
+
+/* ── 列表行 ──
+   行与行之间用发丝线而不是间隙；hover 给一点点底色，
+   让"这一行是可操作的"变得明确。 */
+
+.list-row {
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: var(--s4);
+  transition: border-color var(--dur) var(--ease),
+              box-shadow var(--dur) var(--ease);
+}
+
+.list-row:hover {
+  border-color: var(--line-strong);
+  box-shadow: var(--sh-1);
+}
+
+.row-head { gap: var(--s3); }
+
+.list-row h3 {
+  font-size: var(--t-md);
+  letter-spacing: -.008em;
+}
+
+.meta {
+  font-size: var(--t-sm);
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* ── 表格 ──
+   表头小写字距放开，正文行高收紧；斑马纹不要，靠发丝线分隔。 */
+
+.table thead th {
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: .06em;
+  color: var(--muted);
+  padding: var(--s3) var(--s4);
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.table td {
+  padding: var(--s3) var(--s4);
+  font-size: var(--t-base);
+  border-bottom: 1px solid var(--line);
+}
+
+.table tbody tr:last-child td { border-bottom: none; }
+
+.table tbody tr { transition: background var(--dur) var(--ease); }
+.table tbody tr:hover { background: var(--surface-sunk); }
+
+/* ── 表单 ──
+   输入框的焦点态用主色描边而不是浏览器默认的蓝框。 */
+
+.field input,
+.field select,
+.field textarea {
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+  padding: 8px 11px;
+  font-size: var(--t-base);
+  background: var(--surface);
+  color: var(--ink);
+  transition: border-color var(--dur) var(--ease),
+              box-shadow var(--dur) var(--ease);
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.field label {
+  font-size: var(--t-sm);
+  font-weight: 500;
+  color: var(--ink-2);
+  letter-spacing: .004em;
+}
+
+/* ── 进度条 ──
+   压薄、加圆角、给填充一点点渐变让它有体积。 */
+
+.progress-track {
+  height: 5px;
+  border-radius: var(--r-pill);
+  background: var(--surface-sunk);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+  transition: width 400ms var(--ease);
+}
+
+/* ── 空状态 ──
+   原来占的视觉重量太大。缩小、降饱和，让它退到背景里。 */
+
+.empty-state {
+  padding: var(--s6) var(--s5);
+  border-radius: var(--r-md);
+  background: var(--surface-sunk);
+  border: 1px dashed var(--line-strong);
+  text-align: center;
+}
+
+.empty-state strong {
+  font-size: var(--t-base);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.empty-state p {
+  font-size: var(--t-sm);
+  color: var(--faint);
+  margin: var(--s1) 0 0;
+}
+
+/* ── 备份告警 ──
+   原来整条红底太抢眼，压过了它旁边真正重要的数据。
+   改成左侧色条 + 极淡底色。 */
+
+.backup-alert {
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--muted);
+  background: var(--surface-sunk);
+  padding: var(--s3) var(--s4);
+  font-size: var(--t-base);
+  box-shadow: none;
+}
+
+.backup-alert.warn { border-left-color: var(--warn); background: var(--warn-soft); }
+.backup-alert.danger { border-left-color: var(--danger); background: var(--danger-soft); }
+.backup-alert.ok { border-left-color: var(--accent); background: var(--accent-soft); }
+
+/* ── 弹窗 ──
+   更强的阴影 + 背景模糊，让它真的"浮"起来。 */
+
+#modal > .modal-card,
+.modal-card {
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-pop);
+  border: 1px solid var(--line);
+}
+
+/* ── 登录页 ──
+   这是别人见到软件的第一屏，值得单独收拾。 */
+
+.auth-card {
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-2);
+  padding: var(--s6);
+}
+
+.auth-form h2 {
+  font-size: var(--t-xl);
+  letter-spacing: -.015em;
+}
+
+.auth-form input {
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+  padding: 9px 12px;
+  transition: border-color var(--dur) var(--ease),
+              box-shadow var(--dur) var(--ease);
+}
+
+.auth-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.auth-hint { font-size: var(--t-sm); line-height: 1.7; }
+
+/* ══════════════════════════════════════════════════════════
+   精修层 · 二轮：节奏与层次
+   第一轮统一了 token，但列表行内部四层间距几乎相同——
+   没有东西在领读。这一轮解决"看哪里"的问题。
+   ══════════════════════════════════════════════════════════ */
+
+/* ── 工具栏 ──
+   搜索框和主按钮原来只是并排，没有对齐关系。
+   让搜索框吃掉剩余宽度，按钮贴右，高度对齐。 */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  margin-bottom: var(--s4);
+  flex-wrap: wrap;
+}
+
+.toolbar input[type="search"],
+.toolbar select {
+  flex: 1 1 220px;
+  min-width: 0;
+  height: 36px;
+  padding: 0 var(--s3);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  font-size: var(--t-base);
+  color: var(--ink);
+  transition: border-color var(--dur) var(--ease),
+              box-shadow var(--dur) var(--ease);
+}
+
+.toolbar input[type="search"]:focus,
+.toolbar select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.toolbar .primary-button,
+.toolbar .small-button {
+  height: 36px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex: 0 0 auto;
+}
+
+/* ── 列表行的内部节奏 ──
+   姓名领读、meta 退后、正文独立成段。
+   靠的是间距的疏密对比，不是字号堆叠。 */
+
+.list-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding: var(--s4) var(--s5);
+}
+
+.list-row .row-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s4);
+}
+
+.list-row h3 {
+  margin: 0 0 5px;
+  font-size: var(--t-md);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex-wrap: wrap;
+}
+
+/* meta 行：分隔点代替换行，一行说完 */
+.list-row .meta {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex-wrap: wrap;
+  margin: 0;
+  font-size: var(--t-sm);
+  color: var(--muted);
+}
+
+.list-row .meta > span:not(.tag) + span:not(.tag)::before {
+  content: "·";
+  margin-right: var(--s2);
+  color: var(--line-strong);
+}
+
+.list-row p {
+  margin: 0;
+  font-size: var(--t-base);
+  line-height: 1.7;
+  color: var(--ink-2);
+}
+
+.list-row p strong { color: var(--ink); font-weight: 600; }
+
+/* ── 行内操作：渐进披露 ──
+   默认降到 55% 不透明度，指针进入该行才完全显现。
+   按钮一直在原位、可点、可聚焦——只是安静下来，
+   让内容而不是操作占据注意力。
+   触屏没有 hover，所以那边保持全显。 */
+
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .list-row .row-actions,
+  .table tbody tr .small-button {
+    opacity: .55;
+    transition: opacity var(--dur) var(--ease);
+  }
+
+  .list-row:hover .row-actions,
+  .list-row:focus-within .row-actions,
+  .table tbody tr:hover .small-button,
+  .table tbody tr:focus-within .small-button {
+    opacity: 1;
+  }
+}
+
+/* ── 标签 ──
+   原来太淡，在白底上几乎读不出来。加深文字、给底色一点存在感。 */
+
+.tag {
+  background: var(--surface-sunk);
+  color: var(--ink-2);
+  border: 1px solid var(--line);
+}
+
+.tag.ok      { background: var(--accent-soft); color: var(--accent-strong); border-color: transparent; }
+.tag.blue    { background: var(--blue-soft);   color: var(--blue);          border-color: transparent; }
+.tag.violet  { background: var(--violet-soft); color: var(--violet);        border-color: transparent; }
+.tag.warn    { background: var(--warn-soft);   color: var(--warn);          border-color: transparent; }
+.tag.danger  { background: var(--danger-soft); color: var(--danger);        border-color: transparent; }
+
+/* ── 面板的重量分级 ──
+   原来每块面板视觉重量完全相同，整页读起来像一张网格。
+   主内容区保持实体感，侧栏面板退半档。 */
+
+.grid.two-col > .panel:last-child,
+.grid.three-col > .panel:last-child {
+  background: var(--surface-sunk);
+  box-shadow: none;
+}
+
+/* ── 空状态再降一档 ──
+   它是"这里暂时没东西"，不该和真实内容抢重量。 */
+
+.empty-state {
+  padding: var(--s5) var(--s4);
+  border-style: dashed;
+  border-color: var(--line);
+  background: transparent;
+}
+
+.empty-state strong { font-weight: 500; color: var(--muted); }
+.empty-state p { color: var(--faint); font-size: var(--t-sm); }
+
+/* ── 侧边栏收尾 ──
+   品牌区与导航之间加一条发丝线；底部区域压暗，
+   让 17 个导航项不再是一列等重的文字。 */
+
+.brand {
+  padding-bottom: var(--s4);
+  margin-bottom: var(--s3);
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+}
+
+.brand strong {
+  font-size: var(--t-md);
+  font-weight: 600;
+  letter-spacing: -.01em;
+}
+
+.brand small {
+  font-size: var(--t-xs);
+  opacity: .62;
+  letter-spacing: .02em;
+}
+
+.nav { display: flex; flex-direction: column; gap: 1px; }
+
+.sidebar-foot {
+  padding-top: var(--s4);
+  margin-top: var(--s4);
+  border-top: 1px solid rgba(255, 255, 255, .08);
+}
+
+.sidebar-foot p {
+  font-size: var(--t-xs);
+  opacity: .5;
+  line-height: 1.6;
+}
+
+/* ── KPI 内部节奏 ──
+   数字和说明之间的距离，比卡片内边距更能决定它是否"讲清楚了"。 */
+
+.kpi { gap: 2px; padding: var(--s4) var(--s5) var(--s5); }
+.kpi strong { line-height: 1.05; }
+.kpi span { letter-spacing: .008em; }
+
+/* ── 今日待办与风险条目 ──
+   这两块是首页真正要看的东西，给它们比其他面板更实的存在感。 */
+
+.issue {
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  padding: var(--s3) var(--s4);
+  background: var(--surface);
+  transition: border-color var(--dur) var(--ease);
+}
+
+.issue:hover { border-color: var(--line-strong); }
+
+.issue.high {
+  border-left: 3px solid var(--danger);
+  background: var(--surface);
+}
+
+.issue strong { font-size: var(--t-base); font-weight: 600; }
+.issue p { margin: 3px 0 0; font-size: var(--t-sm); color: var(--muted); }
+
+.issue-list { display: flex; flex-direction: column; gap: var(--s2); }
+.today-list { display: flex; flex-direction: column; gap: var(--s2); }
+
+/* ══════════════════════════════════════════════════════════
+   精修层 · 三轮：修实际用起来才发现的问题
+   ══════════════════════════════════════════════════════════ */
+
+/* ── 工具栏：只有直接子元素参与伸缩 ──
+   上一轮写成 .toolbar select 会连 .toolbar-actions 里嵌套的下拉
+   一起撑开，导致整行折成两行、对齐全乱。 */
+
+.toolbar > input[type="search"] { flex: 1 1 240px; }
+
+.toolbar > select,
+.toolbar-actions select,
+.toolbar-actions input {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 130px;
+  height: 36px;
+  padding: 0 var(--s3);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  font-size: var(--t-base);
+  color: var(--ink);
+}
+
+.toolbar-actions { margin-left: auto; }
+
+/* ── 表格放进卡片 ──
+   原来表格直接浮在页面背景上，没有容器，边界靠猜。 */
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: var(--sh-1);
+}
+
+.table thead th { background: var(--surface-sunk); }
+
+/* 数字列右对齐并等宽。左对齐的数字列在视觉上是散的。 */
+.table td:nth-child(n+5):nth-child(-n+6),
+.table th:nth-child(n+5):nth-child(-n+6) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 操作列贴右，不参与文字对齐 */
+.table td:last-child,
+.table th:last-child { text-align: right; white-space: nowrap; }
+
+/* ── 科研自动化 ──
+   七个节点的编号是真实顺序，保留编号是对的；
+   但圆圈原来太大太亮，抢过了节点名称本身。 */
+
+.automation-template > div > span,
+.workflow-steps > div > span {
+  width: 20px;
+  height: 20px;
+  font-size: var(--t-xs);
+  font-weight: 600;
+  display: inline-grid;
+  place-items: center;
+  border-radius: var(--r-pill);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  flex: 0 0 auto;
+}
+
+.automation-template > div,
+.workflow-steps > div {
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: var(--s3);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+
+.automation-template > div strong,
+.workflow-steps > div strong {
+  font-size: var(--t-base);
+  font-weight: 600;
+}
+
+.automation-template > div p,
+.workflow-steps > div p {
+  margin: 0;
+  font-size: var(--t-sm);
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* 流程卡里的三栏原来各带一条不同颜色的左边框，颜色不统一。
+   统一成同一条发丝线，用标题字重区分而不是颜色。 */
+.automation-facts > div,
+.automation-meta > div {
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--accent-line);
+  border-radius: var(--r-sm);
+  padding: var(--s3);
+  background: var(--surface-sunk);
+}
+
+/* ── 弹窗 ──
+   遮罩加一点模糊，卡片给足内边距。这是用得最频繁的界面之一。 */
+
+#modal {
+  background: rgba(19, 28, 27, .32);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+#modal > div {
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-pop);
+  padding: var(--s6);
+}
+
+#modalTitle {
+  font-size: var(--t-xl);
+  font-weight: 600;
+  letter-spacing: -.015em;
+  margin-bottom: var(--s5);
+}
+
+.form-grid { gap: var(--s4); }
+.form-actions { margin-top: var(--s3); gap: var(--s2); }
+
+/* ── 同步状态 ──
+   它出现在标题旁边，不该抢标题的注意力。 */
+
+.sync-status {
+  font-size: var(--t-xs);
+  font-weight: 500;
+  letter-spacing: .01em;
+  border-radius: var(--r-pill);
+  padding: 3px 10px;
+}
+
+/* ── 滚动条 ──
+   默认滚动条在浅色界面里很突兀。收细、降对比。 */
+
+@supports selector(::-webkit-scrollbar) {
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: var(--line-strong);
+    border-radius: var(--r-pill);
+    border: 3px solid var(--bg);
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--faint); }
+}
+
+/* ── 选中态 ──
+   默认的蓝色选中在青绿界面里是外来色。 */
+
+::selection { background: var(--accent-soft); color: var(--accent-strong); }
+
+/* ══════════════════════════════════════════════════════════
+   精修层 · 四轮：垂直密度
+   前三轮解决了"好不好看"，这轮解决"一屏能看到多少"。
+   课题组的人一天要开好几次，滚动成本是真实成本。
+   ══════════════════════════════════════════════════════════ */
+
+/* 空态收到最小可用尺寸。它传达的信息只有一句"这里还没有东西"，
+   不该占掉半屏。 */
+.empty-state {
+  padding: var(--s4) var(--s4);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.empty-state strong { font-size: var(--t-base); }
+.empty-state p { margin: 0; }
+
+/* 面板内容之间的间隙统一，不再依赖模板里写死的 margin。 */
+.panel > * + * { margin-top: 0; }
+.panel .list,
+.panel .issue-list,
+.panel .today-list { display: flex; flex-direction: column; gap: var(--s2); }
+
+/* 列表行之间靠间隙区分即可，不需要每行都投影。 */
+.list { display: flex; flex-direction: column; gap: var(--s3); }
+
+/* KPI 一行四个时压低高度——它是概览，不是主角。 */
+.kpi-grid { gap: var(--s3); }
+.kpi { padding: var(--s4) var(--s4) var(--s4) var(--s5); }
+.kpi strong { font-size: var(--t-xl); }
+
+/* 顶栏压缩一档，把垂直空间还给内容。 */
+.topbar { padding-bottom: var(--s4); margin-bottom: var(--s4); }
+.topbar h1 { font-size: 26px; }
+
+/* 表格行高收紧，一屏多看两三行。 */
+.table td { padding: 10px var(--s4); }
+.table thead th { padding: 9px var(--s4); }
+
+/* ══════════════════════════════════════════════════════════
+   精修层 · 五轮：手机端导航
+   之前侧边栏在窄屏下不折叠，17 个导航项占满整屏，
+   内容被推到第二屏——学生用手机打开等于什么都看不到。
+   改成顶部横向滚动条：所有入口仍然可达，但只占一行。
+   ══════════════════════════════════════════════════════════ */
+
+@media (max-width: 860px) {
+  #app {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .sidebar {
+    min-height: 0;
+    padding: var(--s3) var(--s4) 0;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    gap: var(--s3);
+  }
+
+  /* 品牌区收成一行，不再占用竖向空间 */
+  .brand {
+    padding-bottom: var(--s3);
+    margin-bottom: 0;
+    gap: var(--s3);
+  }
+
+  .brand small { display: none; }
+
+  /* 导航横向滚动。所有 17 项仍在，只是改为左右滑动。 */
+  .nav {
+    flex-direction: row;
+    gap: var(--s1);
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: var(--s3);
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+  }
+
+  .nav::-webkit-scrollbar { display: none; }
+
+  .nav-item {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    padding: 7px var(--s3);
+    scroll-snap-align: start;
+  }
+
+  /* 底部的语言切换和退出移到导航同层，不再单独占一段 */
+  .sidebar-foot {
+    display: flex;          /* 基础样式是 block，只设 flex-direction 不生效 */
+    flex-direction: row;
+    align-items: center;
+    gap: var(--s2);
+    padding: 0 0 var(--s3);
+    margin-top: 0;
+    border-top: none;
+    flex-wrap: wrap;
+  }
+
+  .sidebar-foot p { display: none; }
+
+  /* 底部这几件在窄屏里必须全部压进一行：
+     语言切换、提醒按钮、身份与退出。竖排的话光这一段就吃掉 134px。 */
+  /* 基础样式给这些元素设了 width:100%，flex-basis:auto 会取到它，
+     于是三个元素各占一行。必须显式改回 auto。 */
+  .sidebar-foot > * { flex: 0 0 auto; margin: 0; width: auto; }
+
+  .sidebar-foot .lang-switch { order: 1; }
+  .sidebar-foot #notifyBtn { order: 2; padding: 5px 10px; font-size: var(--t-xs); }
+
+  .whoami {
+    order: 3;
+    margin: 0;
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: flex-end;
+    font-size: var(--t-xs);
+  }
+
+  .whoami #whoamiName { max-width: 9em; }
+  .lang-switch button { padding: 4px 9px; font-size: var(--t-xs); }
+
+  .main { padding: var(--s4); }
+
+  /* 顶栏的操作按钮在窄屏容易挤，允许换行并靠左 */
+  .topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--s3);
+  }
+
+  .topbar-actions { width: 100%; flex-wrap: wrap; }
+
+  /* 多列网格一律单列 */
+  .grid.two-col,
+  .grid.three-col { grid-template-columns: minmax(0, 1fr); }
+
+  .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  /* 表格在窄屏里横向滚动，不撑破页面 */
+  .table { display: block; overflow-x: auto; white-space: nowrap; }
+
+  /* 行内操作换行到下方，不和标题挤 */
+  .list-row .row-head { flex-direction: column; align-items: flex-start; }
+  .row-actions { width: 100%; justify-content: flex-start; }
+}
+
+@media (max-width: 480px) {
+  .kpi-grid { grid-template-columns: minmax(0, 1fr); }
+  .main { padding: var(--s3); }
+  .panel { padding: var(--s4); }
+  .topbar h1 { font-size: 22px; }
+}
