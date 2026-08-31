@@ -2851,11 +2851,14 @@ function renderNatureSkill() {
 const EXPORT_WARN_DAYS = 14;
 const EXPORT_DANGER_DAYS = 30;
 
-/* 浏览器内备份清一次缓存就没了，只有导出到文件才是真备份，所以单独提醒。 */
+/* 数据在服务器上，服务端也有每日备份。这里提醒的是「离线副本」：
+   服务器炸了或误删整库时，本机导出的那份 JSON 是最后一道保险。
+   注意别再写"清浏览器缓存会丢"——那是 localStorage 时代的话，
+   现在清缓存什么也不会发生，写在这只会白白吓人。 */
 function backupStatus() {
   const lastExportAt = state.settings.lastExportAt || "";
   if (!lastExportAt) {
-    return { level: "danger", text: "你还没有把数据导出成文件。清理浏览器数据会让所有记录消失。" };
+    return { level: "warn", text: "还没有导出过离线备份。服务器每天自动备份，但那份也在同一台机器上。" };
   }
   const days = daysBetween(lastExportAt);
   if (days >= EXPORT_DANGER_DAYS) {

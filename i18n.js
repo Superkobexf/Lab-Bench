@@ -136,6 +136,7 @@ const EN = {
   "你": "you",
   "还没有账号": "No accounts yet",
   "回收站": "Trash",
+  "还没有导出过离线备份。服务器每天自动备份，但那份也在同一台机器上。": "No offline backup yet. The server backs itself up daily, but that copy lives on the same machine.",
   "未关联目标": "No linked goal",
   "操作记录": "Activity log",
   "来源 IP": "Source IP",

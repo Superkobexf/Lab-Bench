@@ -11,8 +11,8 @@
 
   --ink:           #131c1b;
   --ink-2:         #3b4a47;
-  --muted:         #6a7975;
-  --faint:         #8d9b97;
+  --muted:         #5d6c68;
+  --faint:         #616e6a;
 
   --line:          #e3eae6;
   --line-strong:   #cedad5;
@@ -24,7 +24,7 @@
   --accent-soft:   #dff1ed;
   --accent-line:   #a8d8d0;
 
-  --warn:          #96650f;
+  --warn:          #8d5f0e;
   --warn-soft:     #fbf0da;
   --danger:        #a3342a;
   --danger-soft:   #fbe9e6;
@@ -2995,4 +2995,84 @@ h1, h2, h3, h4 {
   .main { padding: var(--s3); }
   .panel { padding: var(--s4); }
   .topbar h1 { font-size: 22px; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   精修层 · 六轮：体检查出来的问题
+   ══════════════════════════════════════════════════════════ */
+
+/* ── 长串文本兜底 ──
+   DOI、URL、Windows 文件路径这类没有断点的长串会顶破容器。
+   中文和普通英文不受影响（break-word 只在真的放不下时才断）。 */
+
+.list-row p,
+.meta,
+.issue p,
+.empty-state p,
+.gain p,
+.table td,
+.attachment-chip,
+.annotation p {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* 明确要保留完整、可复制的地方不断行——路径断了就没法复制粘贴。 */
+code, .command-card code, .mono { overflow-wrap: normal; word-break: normal; }
+.table-scroll, .command-card { overflow-x: auto; }
+
+/* ── 首次使用 ──
+   全新部署时四个 0 加一条警告，是很差的第一印象。
+   给空的 KPI 一个更安静的样子，让引导性的文案成为焦点。 */
+
+.kpi:has(strong:not(:empty)) { transition: box-shadow var(--dur) var(--ease); }
+
+/* ── 焦点在容器内时抬升整块 ──
+   键盘操作的人需要知道"我现在在哪一块"。 */
+
+.panel:focus-within { border-color: var(--accent-line); }
+
+/* ── 表格内的标签垂直居中 ──
+   状态列里的标签原来贴着上边，和同行文字不齐。 */
+
+.table td .tag { vertical-align: middle; }
+
+/* ── 禁用态 ──
+   之前没有定义过。提交中的按钮必须看起来不可点，
+   否则用户会连点导致重复提交。 */
+
+button:disabled,
+button[disabled] {
+  opacity: .5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ── 打印 ──
+   导师会打印成果清单和经费明细拿去报账。
+   默认打印会把深色侧边栏整片印出来，非常费墨。 */
+
+@media print {
+  .sidebar,
+  .topbar-actions,
+  .toolbar,
+  .row-actions,
+  .backup-alert,
+  #modal { display: none !important; }
+
+  #app { grid-template-columns: 1fr; }
+  .main { padding: 0; }
+
+  body { background: #fff; font-size: 11pt; }
+
+  .panel,
+  .list-row,
+  .table {
+    box-shadow: none;
+    border: 1px solid #bbb;
+    break-inside: avoid;
+  }
+
+  .view:not(.active-view) { display: none; }
+  a[href^="/api/"]::after { content: ""; }   /* 内部链接不打印 URL */
 }
